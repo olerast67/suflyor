@@ -24,8 +24,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.olerast.suflyor.R
 import com.olerast.suflyor.doc.Paragraph
 import com.olerast.suflyor.doc.ScriptDocument
 
@@ -42,16 +44,27 @@ fun EditorScreen(
     var title by rememberSaveable { mutableStateOf(initialTitle) }
     var text by rememberSaveable { mutableStateOf(initialText) }
     val canSave = text.isNotBlank()
+    val untitled = stringResource(R.string.common_untitled)
 
     Column(Modifier.fillMaxSize().background(Palette.Bg).statusBarsPadding().navigationBarsPadding().imePadding()) {
-        TopBar(if (isNew) "Новый сценарий" else "Правка", onBack = onCancel) {
-            TextButton(onClick = { if (canSave) onSave(title.ifBlank { "Без названия" }, text) }) {
-                Text("Готово", color = if (canSave) Palette.Accent else Palette.TextMuted, style = MaterialTheme.typography.labelLarge)
+        TopBar(stringResource(if (isNew) R.string.editor_title_new else R.string.editor_title_edit), onBack = onCancel) {
+            TextButton(onClick = { if (canSave) onSave(title.ifBlank { untitled }, text) }) {
+                Text(
+                    stringResource(R.string.editor_action_done),
+                    color = if (canSave) Palette.Accent else Palette.TextMuted,
+                    style = MaterialTheme.typography.labelLarge,
+                )
             }
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
             Box {
-                if (title.isEmpty()) Text("Название", style = MaterialTheme.typography.headlineSmall, color = Palette.TextMuted)
+                if (title.isEmpty()) {
+                    Text(
+                        stringResource(R.string.editor_hint_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Palette.TextMuted,
+                    )
+                }
                 BasicTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -65,7 +78,7 @@ fun EditorScreen(
             Box {
                 if (text.isEmpty()) {
                     Text(
-                        "Вставь или напиши текст. Каждый абзац — с новой строки.",
+                        stringResource(R.string.editor_hint_text),
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp, lineHeight = 27.sp),
                         color = Palette.TextMuted,
                     )
@@ -80,7 +93,7 @@ fun EditorScreen(
             }
         }
         Text(
-            "**жирный** — акцент · # заголовок · [пометка] — видна, но не читается",
+            stringResource(R.string.editor_syntax_help),
             style = MaterialTheme.typography.bodyMedium,
             color = Palette.TextMuted,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),

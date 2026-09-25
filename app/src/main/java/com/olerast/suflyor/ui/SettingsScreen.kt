@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.compose.runtime.DisposableEffect
 import com.olerast.suflyor.overlay.KeyAction
 import com.olerast.suflyor.overlay.KeyBindings
@@ -38,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.olerast.suflyor.App
 import com.olerast.suflyor.BuildConfig
 import com.olerast.suflyor.R
+import com.olerast.suflyor.script.SpeechLang
 
 @Composable
 fun SettingsScreen(
@@ -59,6 +62,7 @@ fun SettingsScreen(
     var lead by remember { mutableIntStateOf(s.leadWords) }
     var wordHighlight by remember { mutableStateOf(s.wordHighlight) }
     var hotwords by remember { mutableStateOf(s.useHotwords) }
+    var speechLang by remember { mutableStateOf(s.speechLang) }
     var phraseMode by remember { mutableStateOf(s.phraseMode) }
     var maxWords by remember { mutableIntStateOf(s.maxWords) }
     var font by remember { mutableIntStateOf(s.fontSp) }
@@ -78,33 +82,38 @@ fun SettingsScreen(
     DisposableEffect(Unit) { onDispose { KeyLearning.action = null } }
 
     Column(Modifier.fillMaxSize().background(Palette.Bg).statusBarsPadding().navigationBarsPadding()) {
-        TopBar("Настройки", onBack)
+        TopBar(stringResource(R.string.settings_title), onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-            SectionTitle("Готовность к работе поверх камеры")
+            SectionTitle(stringResource(R.string.settings_section_readiness))
             ReadyRow(
                 ok = readiness.mic,
-                title = "Микрофон",
-                subtitle = "Лучше выбрать «Только во время использования»",
-                action = "Разрешить",
+                title = stringResource(R.string.settings_mic_title),
+                subtitle = stringResource(R.string.settings_mic_hint),
+                action = stringResource(R.string.settings_action_allow),
                 onAction = onRequestPermissions,
             )
             ReadyRow(
                 ok = readiness.a11yRunning,
-                title = "Служба «Суфлёр» в спецвозможностях",
-                subtitle = if (readiness.a11yEnabled && !readiness.a11yRunning) "Включена, но не запущена — выключи и включи снова"
-                else "Без неё Android глушит микрофон, пока другое приложение снимает видео",
-                action = "Открыть",
+                title = stringResource(R.string.settings_a11y_title),
+                subtitle = stringResource(
+                    if (readiness.a11yEnabled && !readiness.a11yRunning) {
+                        R.string.settings_a11y_not_running
+                    } else {
+                        R.string.settings_a11y_hint
+                    },
+                ),
+                action = stringResource(R.string.settings_action_open),
                 onAction = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
             )
             if (!readiness.a11yRunning) {
                 Text(
-                    "Если переключатель серый: Настройки → Приложения → Суфлёр → ⋮ → «Разрешить ограниченные настройки».",
+                    stringResource(R.string.settings_a11y_restricted, stringResource(R.string.app_name)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Palette.TextMuted,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 )
                 Text(
-                    "Сведения о приложении",
+                    stringResource(R.string.settings_app_info),
                     style = MaterialTheme.typography.labelMedium,
                     color = Palette.Accent,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp).clickable {
@@ -114,55 +123,86 @@ fun SettingsScreen(
             }
             ReadyRow(
                 ok = readiness.notifications,
-                title = "Уведомления",
-                subtitle = "Значок в шторке, пока суфлёр слушает, и кнопка «Остановить»",
-                action = "Разрешить",
+                title = stringResource(R.string.settings_notifications_title),
+                subtitle = stringResource(R.string.settings_notifications_hint),
+                action = stringResource(R.string.settings_action_allow),
                 onAction = onRequestPermissions,
             )
 
-            SectionTitle("Слежение за голосом")
+            SectionTitle(stringResource(R.string.settings_section_voice))
+            // Auto names the language it picked for the current script, so a wrong guess is visible here.
+            val detected = remember(speechLang, app.scripts.layoutVersion) { s.speechLangFor(app.scripts.document) }
+            Column(Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
+                Text(stringResource(R.string.settings_speech_lang_title), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    if (speechLang == AUTO) {
+                        stringResource(R.string.settings_speech_lang_auto_hint, stringResource(speechLangName(detected)))
+                    } else {
+                        stringResource(R.string.settings_speech_lang_fixed_hint)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Palette.TextMuted,
+                )
+            }
+            Row(Modifier.padding(horizontal = 20.dp).padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(
+                    AUTO to R.string.speech_lang_auto,
+                    SpeechLang.RU.code to R.string.speech_lang_ru,
+                    SpeechLang.EN.code to R.string.speech_lang_en,
+                ).forEach { (value, label) ->
+                    Pill(stringResource(label), speechLang == value) {
+                        if (speechLang != value) {
+                            speechLang = value
+                            s.speechLang = value
+                            // Word matching depends on the language, so the current script is laid out again.
+                            app.scripts.relayout()
+                        }
+                    }
+                }
+            }
             StepperRow(
-                "Упреждение", "$lead сл.", "Насколько текст забегает вперёд распознанного, пока ты говоришь",
+                stringResource(R.string.settings_lead_title),
+                pluralStringResource(R.plurals.settings_lead_value, lead, lead),
+                stringResource(R.string.settings_lead_hint),
                 onMinus = { lead = (lead - 1).coerceAtLeast(0); s.leadWords = lead },
                 onPlus = { lead = (lead + 1).coerceAtMost(4); s.leadWords = lead },
             )
-            ToggleRow("Подсвечивать следующее слово", "Иначе видна только текущая строка", wordHighlight) {
+            ToggleRow(stringResource(R.string.settings_highlight_title), stringResource(R.string.settings_highlight_hint), wordHighlight) {
                 wordHighlight = it
                 s.wordHighlight = it
             }
-            ToggleRow("Подсказывать слова сценария", "Точнее узнаёт редкие слова. Применится со следующего запуска", hotwords) {
+            ToggleRow(stringResource(R.string.settings_hotwords_title), stringResource(R.string.settings_hotwords_hint), hotwords) {
                 hotwords = it
                 s.useHotwords = it
             }
 
-            SectionTitle("Текст")
-            ToggleRow("По строке на фразу", "Разбивать текст на фразы, которые говорятся на одном дыхании", phraseMode) {
+            SectionTitle(stringResource(R.string.settings_section_text))
+            ToggleRow(stringResource(R.string.settings_phrase_title), stringResource(R.string.settings_phrase_hint), phraseMode) {
                 phraseMode = it
                 s.phraseMode = it
                 app.scripts.relayout()
             }
             StepperRow(
-                "Слов в строке", "до $maxWords", null,
+                stringResource(R.string.settings_max_words_title), stringResource(R.string.settings_max_words_value, maxWords), null,
                 onMinus = { maxWords = (maxWords - 1).coerceAtLeast(3); s.maxWords = maxWords; app.scripts.relayout() },
                 onPlus = { maxWords = (maxWords + 1).coerceAtMost(14); s.maxWords = maxWords; app.scripts.relayout() },
             )
             StepperRow(
-                "Размер текста", "$font", null,
+                stringResource(R.string.settings_font_title), "$font", null,
                 onMinus = { font = (font - 2).coerceAtLeast(14); s.fontSp = font },
                 onPlus = { font = (font + 2).coerceAtMost(48); s.fontSp = font },
             )
 
-            SectionTitle("Плитка в шторке")
+            SectionTitle(stringResource(R.string.settings_section_tile))
             Text(
-                "Опусти шторку и нажми «Суфлёр» — окно с текущим сценарием появится поверх открытого приложения. " +
-                    "Нажми ещё раз, чтобы остановить.",
+                stringResource(R.string.settings_tile_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Palette.TextMuted,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
             )
             if (Build.VERSION.SDK_INT >= 33) {
                 Text(
-                    "Добавить плитку в шторку",
+                    stringResource(R.string.settings_tile_add),
                     style = MaterialTheme.typography.labelMedium,
                     color = Palette.OnAccent,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp).clip(RoundedCornerShape(12.dp))
@@ -171,21 +211,21 @@ fun SettingsScreen(
                 )
             } else {
                 Text(
-                    "Опусти шторку полностью → ✎ (изменить) → перетащи плитку «Суфлёр» наверх.",
+                    stringResource(R.string.settings_tile_manual),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Palette.TextSecondary,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 )
             }
 
-            SectionTitle("Пульт и кнопки")
-            ToggleRow("Управлять кнопками", "Громкость, Bluetooth-пульт, кольцо, клавиатура — пока окно поверх камеры", keyControl) {
+            SectionTitle(stringResource(R.string.settings_section_keys))
+            ToggleRow(stringResource(R.string.settings_keys_title), stringResource(R.string.settings_keys_hint), keyControl) {
                 keyControl = it
                 s.keyControl = it
             }
             ToggleRow(
-                "Кнопки громкости тоже",
-                "Выключи, если пульт кнопкой громкости включает запись в камере",
+                stringResource(R.string.settings_volume_keys_title),
+                stringResource(R.string.settings_volume_keys_hint),
                 volumeKeys,
             ) {
                 volumeKeys = it
@@ -193,22 +233,27 @@ fun SettingsScreen(
             }
             KeyAction.entries.forEach { action ->
                 val keys = bindings.filterValues { it == action }.keys.map { KeyBindings.keyName(it) }
+                val learning = KeyLearning.action == action
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(action.label), style = MaterialTheme.typography.bodyLarge)
                         Text(
-                            if (KeyLearning.action == action) "Нажми кнопку на пульте…" else keys.joinToString(", ").ifEmpty { "не назначено" },
+                            if (learning) {
+                                stringResource(R.string.settings_key_waiting)
+                            } else {
+                                keys.joinToString(", ").ifEmpty { stringResource(R.string.settings_key_none) }
+                            },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (KeyLearning.action == action) Palette.Accent else Palette.TextMuted,
+                            color = if (learning) Palette.Accent else Palette.TextMuted,
                         )
                     }
-                    Pill(if (KeyLearning.action == action) "Отмена" else "Назначить", KeyLearning.action == action) {
+                    Pill(stringResource(if (learning) R.string.common_cancel else R.string.settings_key_assign), learning) {
                         KeyLearning.action = if (KeyLearning.action == action) null else action
                     }
                 }
             }
             Text(
-                "Вернуть кнопки по умолчанию",
+                stringResource(R.string.settings_keys_reset),
                 style = MaterialTheme.typography.labelMedium,
                 color = Palette.Accent,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp).clickable {
@@ -217,63 +262,92 @@ fun SettingsScreen(
                 },
             )
 
-            SectionTitle("Окно поверх камеры")
-            ToggleRow("Поворачивать для горизонтальной съёмки", "Телефон боком — текст встаёт у объектива и поворачивается", autoRotate) {
+            SectionTitle(stringResource(R.string.settings_section_overlay))
+            ToggleRow(stringResource(R.string.settings_rotate_title), stringResource(R.string.settings_rotate_hint), autoRotate) {
                 autoRotate = it
                 s.autoRotate = it
             }
             StepperRow(
-                "Строк в окне", "$lines", null,
+                stringResource(R.string.settings_lines_title), "$lines", null,
                 onMinus = { lines = (lines - 1).coerceAtLeast(1); s.overlayLines = lines },
                 onPlus = { lines = (lines + 1).coerceAtMost(8); s.overlayLines = lines },
             )
             StepperRow(
-                "Плотность фона", "$alpha%", "Меньше — лучше видно себя сквозь окно",
+                stringResource(R.string.settings_opacity_title),
+                stringResource(R.string.settings_percent_value, alpha),
+                stringResource(R.string.settings_opacity_hint),
                 onMinus = { alpha = (alpha - 8).coerceAtLeast(24); s.overlayAlpha = alpha },
                 onPlus = { alpha = (alpha + 8).coerceAtMost(96); s.overlayAlpha = alpha },
             )
-            ToggleRow("Диагностика в окне", "Что слышит суфлёр и кто ещё пишет звук", diagnostics) {
+            ToggleRow(stringResource(R.string.settings_diag_title), stringResource(R.string.settings_diag_hint), diagnostics) {
                 diagnostics = it
                 s.showDiagnostics = it
             }
 
-            SectionTitle("Автопрокрутка")
+            SectionTitle(stringResource(R.string.settings_section_autoscroll))
             StepperRow(
-                "Скорость", "$wpm", "Слов в минуту: для режима «по скорости» и расчёта хронометража",
+                stringResource(R.string.settings_wpm_title), "$wpm", stringResource(R.string.settings_wpm_hint),
                 onMinus = { wpm = (wpm - 10).coerceAtLeast(60); s.autoScrollWpm = wpm },
                 onPlus = { wpm = (wpm + 10).coerceAtMost(260); s.autoScrollWpm = wpm },
             )
             StepperRow(
-                "Отсчёт перед стартом", if (countdown == 0) "нет" else "$countdown с", "3-2-1 перед прокруткой по скорости",
+                stringResource(R.string.settings_countdown_title),
+                if (countdown == 0) {
+                    stringResource(R.string.settings_countdown_off)
+                } else {
+                    stringResource(R.string.settings_countdown_value, countdown)
+                },
+                stringResource(R.string.settings_countdown_hint),
                 onMinus = { countdown = (countdown - 1).coerceAtLeast(0); s.countdownSec = countdown },
                 onPlus = { countdown = (countdown + 1).coerceAtMost(5); s.countdownSec = countdown },
             )
 
-            SectionTitle("Микрофон")
-            Text("Источник звука", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
+            SectionTitle(stringResource(R.string.settings_section_mic))
+            Text(
+                stringResource(R.string.settings_audio_source),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
+            )
             Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(
-                    MediaRecorder.AudioSource.VOICE_RECOGNITION to "Для речи",
-                    MediaRecorder.AudioSource.MIC to "Обычный",
-                    MediaRecorder.AudioSource.UNPROCESSED to "Без обработки",
+                    MediaRecorder.AudioSource.VOICE_RECOGNITION to R.string.settings_source_speech,
+                    MediaRecorder.AudioSource.MIC to R.string.settings_source_standard,
+                    MediaRecorder.AudioSource.UNPROCESSED to R.string.settings_source_raw,
                 ).forEach { (value, label) ->
-                    Pill(label, source == value) {
+                    Pill(stringResource(label), source == value) {
                         source = value
                         s.audioSource = value
                     }
                 }
             }
-            Text("Частота", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
+            Text(
+                stringResource(R.string.settings_sample_rate),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
+            )
             Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(48000 to "48 кГц", 16000 to "16 кГц").forEach { (value, label) ->
-                    Pill(label, rate == value) {
+                listOf(48000, 16000).forEach { value ->
+                    Pill(stringResource(R.string.settings_rate_khz, value / 1000), rate == value) {
                         rate = value
                         s.sampleRate = value
                     }
                 }
             }
 
-            SectionTitle("О приложении")
+            SectionTitle(stringResource(R.string.settings_section_about))
+            // Android 13+ has a per-app language screen; older versions have none, and the app follows the phone's language.
+            if (Build.VERSION.SDK_INT >= 33) {
+                Column(
+                    Modifier.fillMaxWidth().clickable { openAppLanguageSettings(context) }.padding(horizontal = 20.dp, vertical = 10.dp),
+                ) {
+                    Text(stringResource(R.string.settings_language_title), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        stringResource(R.string.settings_language_value),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Palette.TextMuted,
+                    )
+                }
+            }
             Row(
                 Modifier.fillMaxWidth().clickable(onClick = onJournal).padding(horizontal = 20.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -281,18 +355,28 @@ fun SettingsScreen(
                 Ic(R.drawable.ic_list, null, tint = Palette.TextSecondary)
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Журнал", style = MaterialTheme.typography.bodyLarge)
-                    Text("Что происходило с микрофоном и распознаванием", style = MaterialTheme.typography.bodyMedium, color = Palette.TextMuted)
+                    Text(stringResource(R.string.journal_title), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.settings_log_hint), style = MaterialTheme.typography.bodyMedium, color = Palette.TextMuted)
                 }
             }
             Text(
-                "Суфлёр ${BuildConfig.VERSION_NAME} · распознавание sherpa-onnx, модель alphacep (Apache-2.0)",
+                stringResource(R.string.settings_about_version, BuildConfig.VERSION_NAME),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Palette.TextMuted,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             )
         }
     }
+}
+
+/** [com.olerast.suflyor.Settings.speechLang] value that picks the language from the script's alphabet. */
+private const val AUTO = "auto"
+
+/** Language name for running text ("now: English"); the pills use the names written in their own language. */
+@StringRes
+private fun speechLangName(lang: SpeechLang): Int = when (lang) {
+    SpeechLang.RU -> R.string.settings_speech_lang_name_ru
+    SpeechLang.EN -> R.string.settings_speech_lang_name_en
 }
 
 /** Which action waits for a key press on the settings screen (MainActivity routes the next key here). */
@@ -316,17 +400,25 @@ private fun requestAddTile(context: android.content.Context) {
     val sbm = context.getSystemService(StatusBarManager::class.java) ?: return
     sbm.requestAddTileService(
         ComponentName(context, PrompterTileService::class.java),
-        "Суфлёр",
+        context.getString(R.string.settings_tile_label),
         Icon.createWithResource(context, R.drawable.ic_layers),
         context.mainExecutor,
     ) { result ->
         val msg = when (result) {
-            StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> "Плитка добавлена в шторку"
-            StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED -> "Плитка уже в шторке"
+            StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> R.string.settings_tile_added
+            StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED -> R.string.settings_tile_already_added
             else -> null
         }
         if (msg != null) Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
     }
+}
+
+private fun openAppLanguageSettings(context: android.content.Context) {
+    if (Build.VERSION.SDK_INT < 33) return
+    val app = Uri.fromParts("package", context.packageName, null)
+    // Some vendor builds drop this screen; their App info page still has the Language entry.
+    runCatching { context.startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS, app)) }
+        .onFailure { runCatching { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, app)) } }
 }
 
 @Composable

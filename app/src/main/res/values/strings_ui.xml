@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App screens: library, editor, rehearsal, settings, log. -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Library -->
+    <string name="library_title">Scripts</string>
+    <string name="library_search_hint">Search</string>
+    <string name="library_search_empty">Nothing found</string>
+    <string name="library_cd_add">Add script</string>
+    <string name="library_add_title">New script</string>
+    <string name="library_add_file">Open file</string>
+    <string name="library_add_file_formats" translatable="false">DOCX, PDF, TXT, Markdown, RTF, ODT, HTML</string>
+    <string name="library_add_paste">Paste from clipboard</string>
+    <string name="library_add_paste_hint">Text copied in any app</string>
+    <string name="library_add_write">Write</string>
+    <string name="library_add_write_hint">Type or paste the text yourself</string>
+    <string name="library_setup_title">Set up recording over the camera</string>
+    <string name="library_setup_progress" tools:ignore="PluralsCandidate">%1$d of %2$d done: needs the microphone and the Suflyor service</string>
+
+    <!-- Editor -->
+    <string name="editor_title_new">New script</string>
+    <string name="editor_title_edit">Edit script</string>
+    <string name="editor_action_done">Done</string>
+    <string name="editor_hint_title">Title</string>
+    <string name="editor_hint_text">Paste or type your text. Start each paragraph on a new line.</string>
+    <string name="editor_syntax_help">**bold** — emphasis · # heading · [note] — shown, not read aloud</string>
+
+    <!-- Rehearsal: status next to the level meter -->
+    <string name="rehearsal_status_starting">starting…</string>
+    <string name="rehearsal_status_idle">not listening</string>
+    <string name="rehearsal_status_paused">paused</string>
+    <string name="rehearsal_status_auto">auto-scroll · %1$d wpm</string>
+    <string name="rehearsal_status_mic_busy">another app is using the mic</string>
+    <string name="rehearsal_status_fallback">can\'t hear you — scrolling on my own</string>
+    <string name="rehearsal_status_listening">listening</string>
+
+    <!-- Log (the log lines themselves are English in every language: they go into bug reports) -->
+    <string name="journal_title">Log</string>
+    <string name="journal_clip_label">Suflyor log</string>
+    <string name="journal_toast_copied">Log copied</string>
+    <string name="journal_cd_copy">Copy</string>
+    <string name="journal_share_title">Send log</string>
+    <string name="journal_cd_share">Share</string>
+    <string name="journal_cd_clear">Clear</string>
+
+    <!-- −/+ buttons of a setting; %1$s is the setting's name -->
+    <string name="stepper_cd_decrease">Decrease %1$s</string>
+    <string name="stepper_cd_increase">Increase %1$s</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_action_allow">Allow</string>
+    <string name="settings_action_open">Open</string>
+
+    <string name="settings_section_readiness">Ready to record over the camera</string>
+    <string name="settings_mic_title">Microphone</string>
+    <!-- Quotes the choice in Android's own permission dialog. -->
+    <string name="settings_mic_hint">Best choice: “While using the app”</string>
+    <string name="settings_a11y_title">Suflyor accessibility service</string>
+    <string name="settings_a11y_not_running">On but not running — turn it off and on again</string>
+    <string name="settings_a11y_hint">Without it, Android mutes the mic while another app records video</string>
+    <!-- %1$s is the app name as Android lists it. -->
+    <string name="settings_a11y_restricted">If the switch is greyed out: Settings → Apps → %1$s → ⋮ → “Allow restricted settings”.</string>
+    <string name="settings_app_info">App info</string>
+    <string name="settings_notifications_title">Notifications</string>
+    <string name="settings_notifications_hint">An icon in the notification shade while Suflyor listens, with a Stop button</string>
+
+    <string name="settings_section_voice">Voice following</string>
+    <string name="settings_speech_lang_title">Speech language</string>
+    <!-- %1$s is settings_speech_lang_name_ru or _en. -->
+    <string name="settings_speech_lang_auto_hint">Auto picks it from the script\'s letters — now: %1$s</string>
+    <string name="settings_speech_lang_fixed_hint">Suflyor expects this language in every script</string>
+    <string name="settings_speech_lang_name_ru">Russian</string>
+    <string name="settings_speech_lang_name_en">English</string>
+    <string name="settings_lead_title">Look-ahead</string>
+    <plurals name="settings_lead_value">
+        <item quantity="one">%d word</item>
+        <item quantity="other">%d words</item>
+    </plurals>
+    <string name="settings_lead_hint">How far the text runs ahead of what\'s recognized while you speak</string>
+    <string name="settings_highlight_title">Highlight the next word</string>
+    <string name="settings_highlight_hint">Otherwise only the current line is marked</string>
+    <string name="settings_hotwords_title">Boost script words</string>
+    <string name="settings_hotwords_hint">Better at rare words. Takes effect the next time the app starts</string>
+
+    <string name="settings_section_text">Text</string>
+    <string name="settings_phrase_title">One phrase per line</string>
+    <string name="settings_phrase_hint">Split the text into phrases you can say in one breath</string>
+    <string name="settings_max_words_title">Words per line</string>
+    <string name="settings_max_words_value">up to %1$d</string>
+    <string name="settings_font_title">Text size</string>
+
+    <string name="settings_section_tile">Quick Settings tile</string>
+    <string name="settings_tile_hint">Pull down the shade and tap “Suflyor” — a window with the current script appears over the open app. Tap again to stop.</string>
+    <string name="settings_tile_add">Add tile to Quick Settings</string>
+    <string name="settings_tile_manual">Pull the shade all the way down → ✎ (edit) → drag the “Suflyor” tile up.</string>
+    <!-- Name of the tile in Android's "add tile" dialog. -->
+    <string name="settings_tile_label">Suflyor</string>
+    <string name="settings_tile_added">Tile added to Quick Settings</string>
+    <string name="settings_tile_already_added">The tile is already in Quick Settings</string>
+
+    <string name="settings_section_keys">Remote and buttons</string>
+    <string name="settings_keys_title">Control with buttons</string>
+    <string name="settings_keys_hint">Volume, Bluetooth remote, ring, keyboard — while the window is over the camera</string>
+    <string name="settings_volume_keys_title">Volume buttons too</string>
+    <string name="settings_volume_keys_hint">Turn off if your remote starts camera recording with a volume button</string>
+    <string name="settings_key_waiting">Press a button on the remote…</string>
+    <string name="settings_key_none">not assigned</string>
+    <string name="settings_key_assign">Assign</string>
+    <string name="settings_keys_reset">Reset buttons to defaults</string>
+
+    <string name="settings_section_overlay">Window over the camera</string>
+    <string name="settings_rotate_title">Rotate for landscape recording</string>
+    <string name="settings_rotate_hint">Phone on its side — the text moves next to the lens and turns</string>
+    <string name="settings_lines_title">Lines in the window</string>
+    <string name="settings_opacity_title">Background opacity</string>
+    <string name="settings_percent_value" translatable="false">%1$d%%</string>
+    <string name="settings_opacity_hint">Lower lets you see yourself through the window</string>
+    <string name="settings_diag_title">Diagnostics in the window</string>
+    <string name="settings_diag_hint">What Suflyor hears and who else is recording audio</string>
+
+    <string name="settings_section_autoscroll">Auto-scroll</string>
+    <string name="settings_wpm_title">Speed</string>
+    <string name="settings_wpm_hint">Words per minute: for auto-scroll and timing estimates</string>
+    <string name="settings_countdown_title">Countdown before start</string>
+    <string name="settings_countdown_off">off</string>
+    <string name="settings_countdown_value">%1$d s</string>
+    <string name="settings_countdown_hint" tools:ignore="TypographyDashes">3-2-1 before auto-scroll starts</string>
+
+    <string name="settings_section_mic">Microphone</string>
+    <string name="settings_audio_source">Audio source</string>
+    <string name="settings_source_speech">Speech</string>
+    <string name="settings_source_standard">Standard</string>
+    <string name="settings_source_raw">Unprocessed</string>
+    <string name="settings_sample_rate">Sample rate</string>
+    <string name="settings_rate_khz">%1$d kHz</string>
+
+    <string name="settings_section_about">About</string>
+    <!-- Android 13+ only: opens the system per-app language screen. -->
+    <string name="settings_language_title">App language</string>
+    <!-- The language this file is in: shows which translation the app uses now. -->
+    <string name="settings_language_value">English</string>
+    <string name="settings_log_hint">What happened with the microphone and recognition</string>
+    <string name="settings_about_version">Suflyor %1$s · speech recognition: sherpa-onnx; models: alphacep (Russian), icefall LibriSpeech (English), Apache-2.0</string>
+</resources>
