@@ -524,7 +524,7 @@ class OverlayController(private val context: Context, private val windowType: In
             diag.text = buildString {
                 append(s.partial.ifEmpty { s.lastFinal }.takeLast(70))
                 if (others.isNotEmpty()) append("\n").append(others.joinToString("; ") { it.describe() })
-                s.error?.let { append("\n⚠ ").append(it.message(context)) }
+                s.error?.let { append("\n").append(it.message(context)) }
             }
         }
     }
