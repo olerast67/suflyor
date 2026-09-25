@@ -70,11 +70,17 @@ section { padding: 56px 0; border-top: 1px solid var(--line); }
 h2 { font-size: clamp(26px, 3.4vw, 36px); line-height: 1.15; margin: 0 0 12px; letter-spacing: -.01em; }
 .sub { color: var(--muted); margin: 0 0 32px; max-width: 42em; }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
 .card h3 { margin: 0 0 8px; font-size: 18px; }
 .card p { margin: 0; color: var(--muted); font-size: 16px; }
-.icon { font-size: 26px; margin-bottom: 10px; display: block; }
+svg.i { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.icon {
+  display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 14px;
+  border-radius: 12px; color: var(--amber); background: rgba(255, 176, 32, .12);
+}
+.icon svg { width: 24px; height: 24px; }
+.btn svg { width: 18px; height: 18px; flex: none; }
 
 .steps { counter-reset: step; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
 .step { position: relative; padding: 22px 22px 22px 70px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }

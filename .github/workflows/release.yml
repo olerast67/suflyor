@@ -115,7 +115,7 @@ jobs:
           sed -i "s|@VERSION@|$VERSION|g; s|@REPO@|$GITHUB_REPOSITORY|g" notes.md
           # The donate line appears once DONATE.md has real links instead of placeholders.
           if ! grep -qE 'USERNAME|XXXXXXXX|`T\.\.\.`|`UQ\.\.\.`' DONATE.md; then
-            printf '\n❤️ Suflyor is free. If it saves you retakes, [support it](https://github.com/%s/blob/main/DONATE.md).\n' "$GITHUB_REPOSITORY" >> notes.md
+            printf '\nSuflyor is free. If it saves you retakes, [support it](https://github.com/%s/blob/main/DONATE.md).\n' "$GITHUB_REPOSITORY" >> notes.md
           fi
           cat notes.md
 

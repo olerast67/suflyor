@@ -4,14 +4,14 @@ Suflyor is free and open source, with no ads and nothing locked behind a paywall
 
 Суфлёр бесплатный и открытый: без рекламы и платных функций. Донаты идут на время для новых языков и на телефоны для тестов. Спасибо!
 
-## 💛 Boosty
+## Boosty
 
 | | |
 |---|---|
 | **[One-off donation · Разовый донат](https://boosty.to/olerast/donate)** | Cards from most countries; in Russia also Mir cards and SBP · Карты большинства стран, в России — «Мир» и СБП |
 | **[Monthly support · Подписка](https://boosty.to/olerast)** | Support every month and follow the news · Поддержка каждый месяц и новости проекта |
 
-## 🪙 Crypto · Криптовалюта
+## Crypto · Криптовалюта
 
 Send **only USDT on the TRON network (TRC20)** to this address. Coins sent on another network (Ethereum, BNB Chain…) are lost for good.
 
@@ -23,9 +23,9 @@ Send **only USDT on the TRON network (TRC20)** to this address. Coins sent on an
 
 ## Other ways to help · Как ещё помочь
 
-- ⭐ Star the repository: it helps other creators find it. · Поставь звезду репозиторию — так его найдут другие авторы.
-- 🐞 Tell how the app works on your phone, even when everything is fine. · Расскажи, как приложение работает на твоём телефоне, даже если всё хорошо.
-- 🌐 Help with translations and speech models for your language. · Помоги с переводом и моделью речи для своего языка.
+- Star the repository: it helps other creators find it. · Поставь звезду репозиторию — так его найдут другие авторы.
+- Tell how the app works on your phone, even when everything is fine. · Расскажи, как приложение работает на твоём телефоне, даже если всё хорошо.
+- Help with translations and speech models for your language. · Помоги с переводом и моделью речи для своего языка.
 
 ## Goals · Цели
 

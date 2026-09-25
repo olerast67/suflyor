@@ -19,7 +19,7 @@
   <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/olerast67/voice-teleprompter-android"><img alt="Get it on Obtainium" src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="42"></a>
 </p>
 
-<p align="center"><b>English</b> · <a href="README.ru.md">Русский</a> · <a href="https://olerast67.github.io/voice-teleprompter-android/">🌐 Website</a></p>
+<p align="center"><b>English</b> · <a href="README.ru.md">Русский</a> · <a href="https://olerast67.github.io/voice-teleprompter-android/">Website</a></p>
 
 ---
 
@@ -42,7 +42,7 @@ It is made for creators who hold the phone, read a couple of lines to the lens, 
 
 ## Features
 
-**🎙️ Follows your voice**
+**Follows your voice**
 - On-device streaming speech recognition for **English and Russian** ([sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)). No cloud, no account, no delay from the network.
 - Understands how people read English: contractions (don't, it's), numbers written as digits but said as words, abbreviations (Mr., Dr.), acronyms (AI, CEO) and "um"s.
 - Searches the whole script, not only the next few words. Rare words count more than common ones, so it doesn't jump on every "and".
@@ -50,19 +50,19 @@ It is made for creators who hold the phone, read a couple of lines to the lens, 
 - Pauses and off-script talk leave the text where it is.
 - Lines you have read dim away. `[Stage directions in brackets]` stay visible but are never expected to be spoken.
 
-**📱 Floats over any camera app**
+**Floats over any camera app**
 - Keeps listening while Instagram, TikTok or the stock camera records video. The mic isn't taken away from the prompter, and your reel still gets the sound.
 - The text starts right under the front camera, so your eyes stay near the lens. The controls sit at the bottom.
 - **Lock mode:** touches pass through the window to the camera's own buttons.
 - **Landscape:** the window moves next to the lens and turns the text, even when the camera app keeps the screen in portrait.
 - **Quick Settings tile:** starts the prompter over whatever app is open.
 
-**🎮 Remotes and scrolling**
+**Remotes and scrolling**
 - Volume keys, Bluetooth selfie remotes, rings, clickers and keyboards. Each key can be assigned in Settings.
 - Timed scrolling at a set speed, with a 3-2-1 countdown, when you'd rather not use your voice.
 - Rehearsal mode: a full-screen prompter inside the app.
 
-**📄 Imports almost anything**
+**Imports almost anything**
 - TXT (UTF-8, UTF-16, Windows-1251, KOI8-R), Markdown and Obsidian notes, DOCX, ODT, RTF, HTML and PDF.
 - Open from other apps with *Share* or *Open with*, paste from the clipboard, or type in the editor.
 - Long paragraphs are split into short phrases you can read in one breath.
@@ -71,10 +71,10 @@ It is made for creators who hold the phone, read a couple of lines to the lens, 
 
 ```mermaid
 flowchart LR
-    Mic["🎙️ Microphone"] --> ASR["sherpa-onnx<br/>streaming recognizer<br/>(on the phone)"]
+    Mic["Microphone"] --> ASR["sherpa-onnx<br/>streaming recognizer<br/>(on the phone)"]
     ASR -->|"last recognized words"| Tracker["Script tracker<br/>fuzzy local alignment<br/>over the whole script"]
     Tracker -->|"position"| View["Prompter window<br/>over the camera app"]
-    Script["📄 Your script"] --> Tracker
+    Script["Your script"] --> Tracker
 ```
 
 The tracker aligns the last few recognized words against the entire script. It keeps only matches that end on one of the last two words you said (the newest counts more), and it weighs every word by how rare it is in your script. Small steps forward need a single good match. Going back to a nearby line needs about two words from its start. A far jump needs at least three words and a clear lead over every other place in the script; unless the match is very strong, it also waits for the next update to agree.
