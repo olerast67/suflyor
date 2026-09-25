@@ -3,18 +3,18 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/OWNER/suflyor/releases/latest"><img alt="Последняя версия" src="https://img.shields.io/github/v/release/OWNER/suflyor?style=flat-square&color=FFB020&label=версия"></a>
-  <a href="https://github.com/OWNER/suflyor/releases"><img alt="Скачивания" src="https://img.shields.io/github/downloads/OWNER/suflyor/total?style=flat-square&color=46D778&label=скачивания"></a>
-  <a href="https://github.com/OWNER/suflyor/actions/workflows/ci.yml"><img alt="Сборка" src="https://img.shields.io/github/actions/workflow/status/OWNER/suflyor/ci.yml?branch=main&style=flat-square&label=сборка"></a>
+  <a href="https://github.com/olerast67/suflyor/releases/latest"><img alt="Последняя версия" src="https://img.shields.io/github/v/release/olerast67/suflyor?style=flat-square&color=FFB020&label=версия"></a>
+  <a href="https://github.com/olerast67/suflyor/releases"><img alt="Скачивания" src="https://img.shields.io/github/downloads/olerast67/suflyor/total?style=flat-square&color=46D778&label=скачивания"></a>
+  <a href="https://github.com/olerast67/suflyor/actions/workflows/ci.yml"><img alt="Сборка" src="https://img.shields.io/github/actions/workflow/status/olerast67/suflyor/ci.yml?branch=main&style=flat-square&label=сборка"></a>
   <a href="LICENSE"><img alt="Лицензия GPL-3.0" src="https://img.shields.io/badge/лицензия-GPL--3.0-blue?style=flat-square"></a>
   <img alt="Android 10+" src="https://img.shields.io/badge/Android-10%2B-3DDC84?style=flat-square&logo=android&logoColor=white">
   <a href="PRIVACY.md"><img alt="Без интернета" src="https://img.shields.io/badge/сеть-нет-9F7AEA?style=flat-square"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/OWNER/suflyor/releases/latest"><img alt="Скачать APK" src="https://img.shields.io/badge/Скачать%20APK-GitHub%20Releases-FFB020?style=for-the-badge&logo=github&logoColor=black" height="42"></a>
+  <a href="https://github.com/olerast67/suflyor/releases/latest"><img alt="Скачать APK" src="https://img.shields.io/badge/Скачать%20APK-GitHub%20Releases-FFB020?style=for-the-badge&logo=github&logoColor=black" height="42"></a>
   &nbsp;
-  <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/OWNER/suflyor"><img alt="Get it on Obtainium" src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="42"></a>
+  <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/olerast67/suflyor"><img alt="Get it on Obtainium" src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="42"></a>
 </p>
 
 <p align="center"><a href="README.md">English</a> · <b>Русский</b></p>
@@ -87,7 +87,7 @@ flowchart LR
 
 **Что нужно:** Android 10 или новее, 64-битный ARM-телефон (почти любой после 2017 года), около 130 МБ места: обе модели речи внутри приложения. Проверено на Samsung Galaxy S24 FE с One UI 6.1 (Android 14).
 
-1. Скачай `Suflyor-<версия>.apk` в [Releases](https://github.com/OWNER/suflyor/releases/latest) и открой его. Разреши браузеру или файловому менеджеру устанавливать приложения.
+1. Скачай `Suflyor-<версия>.apk` в [Releases](https://github.com/olerast67/suflyor/releases/latest) и открой его. Разреши браузеру или файловому менеджеру устанавливать приложения.
 2. Открой Суфлёр и разреши **микрофон**.
 3. Включи службу специальных возможностей **«Суфлёр: окно поверх и голос»**, приложение само откроет нужный экран.
    - На Android 13 и новее переключатель у приложений, установленных из файла, сначала серый. Открой **Настройки → Приложения → Суфлёр → ⋮ → Разрешить ограниченные настройки** и включи службу ещё раз.
@@ -119,7 +119,7 @@ SHA-256: 77:F3:94:32:F5:05:FB:B7:8B:85:E7:37:CD:00:21:0A:44:C0:7A:13:2C:AC:FF:81
 
 ```bash
 apksigner verify --print-certs Suflyor-*.apk              # сертификат должен совпасть с SHA-256 выше
-gh attestation verify Suflyor-*.apk --repo OWNER/suflyor  # подтверждает, что APK собран workflow этого репозитория
+gh attestation verify Suflyor-*.apk --repo olerast67/suflyor  # подтверждает, что APK собран workflow этого репозитория
 ```
 
 Проверить сертификат прямо на телефоне можно приложением [AppVerifier](https://github.com/soupslurpr/AppVerifier).
@@ -129,7 +129,7 @@ gh attestation verify Suflyor-*.apk --repo OWNER/suflyor  # подтвержда
 Нужны JDK 17 и Android SDK (platform 36).
 
 ```bash
-git clone https://github.com/OWNER/suflyor.git
+git clone https://github.com/olerast67/suflyor.git
 cd suflyor
 ./gradlew assembleDebug testDebugUnitTest
 ```
@@ -143,7 +143,7 @@ cd suflyor
 - **Языковые пакеты:** испанский, немецкий, итальянский, польский, вьетнамский и другие языки, для которых есть компактные потоковые модели. Пакет — это файл, который открывается приложением, так что разрешение на интернет по-прежнему не понадобится, а APK не вырастет.
 - Зеркальный режим для телесуфлёров со стеклом.
 
-Идеи и голоса за них — в [Issues](https://github.com/OWNER/suflyor/issues).
+Идеи и голоса за них — в [Issues](https://github.com/olerast67/suflyor/issues).
 
 ## Поддержать проект
 

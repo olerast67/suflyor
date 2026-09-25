@@ -3,18 +3,18 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/OWNER/suflyor/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/OWNER/suflyor?style=flat-square&color=FFB020&label=release"></a>
-  <a href="https://github.com/OWNER/suflyor/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/OWNER/suflyor/total?style=flat-square&color=46D778"></a>
-  <a href="https://github.com/OWNER/suflyor/actions/workflows/ci.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/OWNER/suflyor/ci.yml?branch=main&style=flat-square&label=build"></a>
+  <a href="https://github.com/olerast67/suflyor/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/olerast67/suflyor?style=flat-square&color=FFB020&label=release"></a>
+  <a href="https://github.com/olerast67/suflyor/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/olerast67/suflyor/total?style=flat-square&color=46D778"></a>
+  <a href="https://github.com/olerast67/suflyor/actions/workflows/ci.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/olerast67/suflyor/ci.yml?branch=main&style=flat-square&label=build"></a>
   <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square"></a>
   <img alt="Android 10+" src="https://img.shields.io/badge/Android-10%2B-3DDC84?style=flat-square&logo=android&logoColor=white">
   <a href="PRIVACY.md"><img alt="No internet permission" src="https://img.shields.io/badge/network-none-9F7AEA?style=flat-square"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/OWNER/suflyor/releases/latest"><img alt="Get the APK on GitHub" src="https://img.shields.io/badge/Get%20the%20APK-GitHub%20Releases-FFB020?style=for-the-badge&logo=github&logoColor=black" height="42"></a>
+  <a href="https://github.com/olerast67/suflyor/releases/latest"><img alt="Get the APK on GitHub" src="https://img.shields.io/badge/Get%20the%20APK-GitHub%20Releases-FFB020?style=for-the-badge&logo=github&logoColor=black" height="42"></a>
   &nbsp;
-  <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/OWNER/suflyor"><img alt="Get it on Obtainium" src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="42"></a>
+  <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/olerast67/suflyor"><img alt="Get it on Obtainium" src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="42"></a>
 </p>
 
 <p align="center"><b>English</b> · <a href="README.ru.md">Русский</a></p>
@@ -91,7 +91,7 @@ The details are in [PRIVACY.md](PRIVACY.md).
 
 **Requirements:** Android 10 or newer on a 64-bit ARM phone (almost every phone since 2017), about 130 MB of space: both speech models are inside the app. Tested on a Samsung Galaxy S24 FE with One UI 6.1 (Android 14).
 
-1. Download `Suflyor-<version>.apk` from [Releases](https://github.com/OWNER/suflyor/releases/latest) and open it. Allow your browser or file manager to install apps when asked.
+1. Download `Suflyor-<version>.apk` from [Releases](https://github.com/olerast67/suflyor/releases/latest) and open it. Allow your browser or file manager to install apps when asked.
 2. Open Suflyor and allow the **microphone**.
 3. Turn on the accessibility service **“Suflyor: floating window and voice”** (on a Russian phone: «Суфлёр: окно поверх и голос»). The app takes you to the right screen.
    - On Android 13 and newer, apps installed from a file can't use accessibility at first, and the switch is greyed out. Go to **Settings → Apps → Suflyor → ⋮ → Allow restricted settings**, then turn the service on again.
@@ -123,7 +123,7 @@ SHA-256: 77:F3:94:32:F5:05:FB:B7:8B:85:E7:37:CD:00:21:0A:44:C0:7A:13:2C:AC:FF:81
 
 ```bash
 apksigner verify --print-certs Suflyor-*.apk            # certificate must match the SHA-256 above
-gh attestation verify Suflyor-*.apk --repo OWNER/suflyor  # proves the APK was built by this repository's workflow
+gh attestation verify Suflyor-*.apk --repo olerast67/suflyor  # proves the APK was built by this repository's workflow
 ```
 
 [AppVerifier](https://github.com/soupslurpr/AppVerifier) can check the certificate on the phone.
@@ -133,7 +133,7 @@ gh attestation verify Suflyor-*.apk --repo OWNER/suflyor  # proves the APK was b
 You need JDK 17 and the Android SDK (platform 36).
 
 ```bash
-git clone https://github.com/OWNER/suflyor.git
+git clone https://github.com/olerast67/suflyor.git
 cd suflyor
 ./gradlew assembleDebug testDebugUnitTest
 ```
@@ -163,7 +163,7 @@ cd suflyor
 - **Language packs:** Spanish, German, Italian, Polish, Vietnamese and other languages that have compact streaming models. They will be files you open with the app, so it still needs no internet permission and the APK doesn't grow.
 - Mirror mode for beam-splitter teleprompter glass.
 
-Ideas and votes are welcome in [Issues](https://github.com/OWNER/suflyor/issues).
+Ideas and votes are welcome in [Issues](https://github.com/olerast67/suflyor/issues).
 
 ## Support the project
 
