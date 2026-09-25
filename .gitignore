@@ -1,0 +1,27 @@
+# Gradle, Kotlin, IDE
+.gradle/
+.kotlin/
+build/
+captures/
+.idea/
+*.iml
+.DS_Store
+
+# Machine-specific paths (sdk.dir, jdk.dir)
+local.properties
+
+# Downloaded by the fetchSpeechAssets task (see app/build.gradle.kts) and checked by SHA-256
+app/libs/*.aar
+app/src/main/assets/asr-ru/*.onnx
+app/src/main/assets/asr-ru/tokens.txt
+app/src/main/assets/asr-ru/bpe.vocab
+*.part
+
+# Signing keys and their passwords
+*.jks
+*.keystore
+keystore.properties
+
+# Built apps
+*.apk
+*.aab

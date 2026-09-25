@@ -1,0 +1,80 @@
+package com.olerast.suflyor.overlay
+
+import android.view.KeyEvent
+import com.olerast.suflyor.session.SessionEngine
+
+enum class KeyAction(val label: String) {
+    PAUSE("Пауза и продолжение"),
+    BACK("Строка назад"),
+    FORWARD("Строка вперёд");
+
+    fun perform(engine: SessionEngine) = when (this) {
+        PAUSE -> engine.togglePause()
+        BACK -> engine.stepLine(-1)
+        FORWARD -> engine.stepLine(1)
+    }
+}
+
+/**
+ * Which hardware key does what. Selfie remotes send volume keys or Enter, presentation clickers send Page Up/Down
+ * or arrows, rings and headsets send media keys; all of them reach the accessibility service as key events.
+ */
+object KeyBindings {
+    val DEFAULT: Map<Int, KeyAction> = mapOf(
+        KeyEvent.KEYCODE_VOLUME_UP to KeyAction.PAUSE,
+        KeyEvent.KEYCODE_VOLUME_DOWN to KeyAction.BACK,
+        KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE to KeyAction.PAUSE,
+        KeyEvent.KEYCODE_MEDIA_PLAY to KeyAction.PAUSE,
+        KeyEvent.KEYCODE_MEDIA_PAUSE to KeyAction.PAUSE,
+        KeyEvent.KEYCODE_HEADSETHOOK to KeyAction.PAUSE,
+        KeyEvent.KEYCODE_SPACE to KeyAction.PAUSE,
+        KeyEvent.KEYCODE_ENTER to KeyAction.PAUSE,
+        KeyEvent.KEYCODE_DPAD_CENTER to KeyAction.PAUSE,
+        KeyEvent.KEYCODE_BUTTON_A to KeyAction.PAUSE,
+        KeyEvent.KEYCODE_MEDIA_NEXT to KeyAction.FORWARD,
+        KeyEvent.KEYCODE_MEDIA_FAST_FORWARD to KeyAction.FORWARD,
+        KeyEvent.KEYCODE_PAGE_DOWN to KeyAction.FORWARD,
+        KeyEvent.KEYCODE_DPAD_DOWN to KeyAction.FORWARD,
+        KeyEvent.KEYCODE_DPAD_RIGHT to KeyAction.FORWARD,
+        KeyEvent.KEYCODE_MEDIA_PREVIOUS to KeyAction.BACK,
+        KeyEvent.KEYCODE_MEDIA_REWIND to KeyAction.BACK,
+        KeyEvent.KEYCODE_PAGE_UP to KeyAction.BACK,
+        KeyEvent.KEYCODE_DPAD_UP to KeyAction.BACK,
+        KeyEvent.KEYCODE_DPAD_LEFT to KeyAction.BACK,
+    )
+
+    fun parse(s: String?): Map<Int, KeyAction> {
+        if (s.isNullOrBlank()) return DEFAULT
+        return s.split(',').mapNotNull { pair ->
+            val (code, action) = pair.split(':').takeIf { it.size == 2 } ?: return@mapNotNull null
+            val c = code.toIntOrNull() ?: return@mapNotNull null
+            val a = KeyAction.entries.firstOrNull { it.name == action } ?: return@mapNotNull null
+            c to a
+        }.toMap()
+    }
+
+    fun format(map: Map<Int, KeyAction>): String = map.entries.joinToString(",") { "${it.key}:${it.value.name}" }
+
+    fun isVolume(code: Int) = code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN
+
+    fun keyName(code: Int): String = when (code) {
+        KeyEvent.KEYCODE_VOLUME_UP -> "Громкость +"
+        KeyEvent.KEYCODE_VOLUME_DOWN -> "Громкость −"
+        KeyEvent.KEYCODE_SPACE -> "Пробел"
+        KeyEvent.KEYCODE_ENTER -> "Enter"
+        KeyEvent.KEYCODE_PAGE_UP -> "Page Up"
+        KeyEvent.KEYCODE_PAGE_DOWN -> "Page Down"
+        KeyEvent.KEYCODE_DPAD_UP -> "↑"
+        KeyEvent.KEYCODE_DPAD_DOWN -> "↓"
+        KeyEvent.KEYCODE_DPAD_LEFT -> "←"
+        KeyEvent.KEYCODE_DPAD_RIGHT -> "→"
+        KeyEvent.KEYCODE_DPAD_CENTER -> "Центр"
+        KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> "Play/Pause"
+        KeyEvent.KEYCODE_MEDIA_PLAY -> "Play"
+        KeyEvent.KEYCODE_MEDIA_PAUSE -> "Pause"
+        KeyEvent.KEYCODE_MEDIA_NEXT -> "Следующий трек"
+        KeyEvent.KEYCODE_MEDIA_PREVIOUS -> "Предыдущий трек"
+        KeyEvent.KEYCODE_HEADSETHOOK -> "Кнопка гарнитуры"
+        else -> KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
+    }
+}
