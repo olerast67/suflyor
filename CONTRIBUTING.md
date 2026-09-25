@@ -23,7 +23,7 @@ On Windows you can also use `.\build.ps1` and `.\install.ps1`. They read `sdk.di
 - **Language and UI.** Kotlin with Jetpack Compose; the floating window uses plain Views because it lives in the accessibility service.
 - **Where logic lives.** Keep the logic that can run on the JVM (importers, text layout, voice tracker) free of Android APIs and cover it with unit tests in `app/src/test`. The tracker has a random stress test; a change to `ScriptTracker` must keep it passing.
 - **Style.** Match the surrounding code; comments explain *why*, not *what*.
-- **No emojis** in the app's text, the docs, the website, commit messages or release notes. Where a picture helps, use an icon (a vector drawable in the app, an inline SVG on the website).
+- **No emojis** in the app's text, the docs, the website, commit messages or release notes; a heart next to a donation link is the only exception. Where a picture helps, use an icon (a vector drawable in the app, an inline SVG on the website).
 - **Pull requests.** One topic per pull request. Describe how you tested it and on which phone.
 
 ## Languages

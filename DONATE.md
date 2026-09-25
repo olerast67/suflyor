@@ -4,7 +4,7 @@ Suflyor is free and open source, with no ads and nothing locked behind a paywall
 
 Суфлёр бесплатный и открытый: без рекламы и платных функций. Донаты идут на время для новых языков и на телефоны для тестов. Спасибо!
 
-## Boosty
+## 💛 Boosty
 
 | | |
 |---|---|

@@ -48,7 +48,6 @@ img { max-width: 100%; height: auto; display: block; }
 /* ---- hero ---- */
 .hero { padding: 56px 0 40px; }
 .hero .wrap { display: grid; grid-template-columns: 1.25fr 1fr; gap: 48px; align-items: center; }
-.eyebrow { color: var(--amber); font-weight: 600; font-size: 15px; letter-spacing: .02em; margin: 0 0 12px; }
 h1 { font-size: clamp(34px, 5vw, 54px); line-height: 1.08; margin: 0 0 18px; letter-spacing: -.02em; }
 .lead { color: var(--muted); font-size: 19px; margin: 0 0 28px; max-width: 34em; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
