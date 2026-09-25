@@ -17,6 +17,7 @@ Suflyor is free and open source, with no ads and nothing locked behind a paywall
 | 💛 | **[Boosty](https://boosty.to/USERNAME)** — one-off or monthly; cards from most countries | platform fee |
 | ☕ | **[Ko-fi](https://ko-fi.com/USERNAME)** — a one-off tip by card or PayPal | processing only |
 | 💜 | **[GitHub Sponsors](https://github.com/sponsors/USERNAME)** — monthly, straight from your GitHub account | none |
+| 🧡 | **[Patreon](https://www.patreon.com/USERNAME)** — monthly membership | platform fee |
 
 ## 🇷🇺 Из России
 

@@ -101,8 +101,17 @@ The details are in [PRIVACY.md](PRIVACY.md).
 
 **Updates:** new versions install over the old one. With [Obtainium](https://github.com/ImranR98/Obtainium) you get them automatically from this repository.
 
-> [!IMPORTANT]
-> **Google developer verification.** Starting 30 September 2026 in Brazil, Indonesia, Singapore and Thailand (and worldwide in 2027), Android installs apps from outside the Play Store only from verified developers. Until this app is registered, phones in those regions may block the install. Installing over USB with `adb install` still works, as does Android's "advanced flow" for sideloading.
+### If Android says the developer isn't verified
+
+Google is rolling out [developer verification](https://developer.android.com/developer-verification). In 2026 it doesn't affect installs from GitHub or Obtainium. From 2027, phones with Google services install apps from developers who are not yet verified only after a one-time setting (the "advanced flow"):
+
+1. Turn on **Developer options**: Settings → About phone → tap **Build number** seven times (on Samsung: About phone → Software information → Build number).
+2. In **Developer options**, turn on **Allow apps from unverified developers** and confirm with your screen lock. Android also asks you to confirm that nobody is guiding you through this: it is a protection against scams.
+3. Restart the phone and **wait 24 hours**. This safety delay happens once.
+4. Open the setting again, confirm, and choose **indefinitely** (or 7 days).
+5. Install the APK and tap **Install anyway**.
+
+Also works: installing from a computer with `adb install Suflyor-<version>.apk`, with no waiting. Phones without Google services (LineageOS without GApps, Huawei) are not affected.
 
 ## Verify your download
 
