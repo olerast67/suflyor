@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -33,11 +34,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.olerast.suflyor.App
+import com.olerast.suflyor.R
 import com.olerast.suflyor.overlay.PrompterView
 import com.olerast.suflyor.script.ScriptModel
 import com.olerast.suflyor.session.SessionEngine
@@ -55,7 +60,7 @@ fun TopBar(title: String, onBack: (() -> Unit)? = null, actions: @Composable () 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (onBack != null) {
-            IconButton(onClick = onBack) { Ic(com.olerast.suflyor.R.drawable.ic_back, "Назад") }
+            IconButton(onClick = onBack) { Ic(R.drawable.ic_back, stringResource(R.string.common_cd_back)) }
         } else {
             Spacer(Modifier.width(12.dp))
         }
@@ -142,9 +147,17 @@ fun StepperRow(title: String, value: String, subtitle: String? = null, onMinus: 
             Text(title, style = MaterialTheme.typography.bodyLarge)
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Palette.TextMuted)
         }
-        RoundIcon(com.olerast.suflyor.R.drawable.ic_minus, "Меньше", onMinus)
-        Text(value, style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(56.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        RoundIcon(com.olerast.suflyor.R.drawable.ic_plus, "Больше", onPlus)
+        // The buttons name their setting: with seven steppers on one screen a bare "Decrease" says nothing.
+        RoundIcon(R.drawable.ic_minus, stringResource(R.string.stepper_cd_decrease, title), onMinus)
+        // Grows for longer values ("up to 14", "4 words") instead of wrapping inside the box.
+        Text(
+            value,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            modifier = Modifier.widthIn(min = 56.dp),
+            textAlign = TextAlign.Center,
+        )
+        RoundIcon(R.drawable.ic_plus, stringResource(R.string.stepper_cd_increase, title), onPlus)
     }
 }
 
@@ -241,13 +254,5 @@ fun LevelMeter(db: Float, muted: Boolean, modifier: Modifier = Modifier) {
 
 fun formatDuration(seconds: Int): String = "%d:%02d".format(seconds / 60, seconds % 60)
 
-fun wordsLabel(n: Int): String {
-    val mod10 = n % 10
-    val mod100 = n % 100
-    val word = when {
-        mod10 == 1 && mod100 != 11 -> "слово"
-        mod10 in 2..4 && mod100 !in 12..14 -> "слова"
-        else -> "слов"
-    }
-    return "$n $word"
-}
+@Composable
+fun wordsLabel(n: Int): String = pluralStringResource(R.plurals.words_count, n, n)

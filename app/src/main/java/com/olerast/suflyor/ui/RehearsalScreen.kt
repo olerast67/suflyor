@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,7 +48,7 @@ fun RehearsalScreen(onBack: () -> Unit) {
 
     Column(Modifier.fillMaxSize().background(Color.Black).statusBarsPadding().navigationBarsPadding()) {
         Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 20.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Ic(R.drawable.ic_back, "Назад") }
+            IconButton(onClick = onBack) { Ic(R.drawable.ic_back, stringResource(R.string.common_cd_back)) }
             val (color, label) = statusOf(state)
             StatusDot(color)
             Spacer(Modifier.width(8.dp))
@@ -77,20 +78,20 @@ fun RehearsalScreen(onBack: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            RoundIcon(R.drawable.ic_replay, "В начало", { app.engine.restart() }, size = 48.dp)
-            RoundIcon(R.drawable.ic_up, "Строка назад", { app.engine.stepLine(-1) }, size = 48.dp)
+            RoundIcon(R.drawable.ic_replay, stringResource(R.string.common_cd_restart), { app.engine.restart() }, size = 48.dp)
+            RoundIcon(R.drawable.ic_up, stringResource(R.string.common_cd_line_back), { app.engine.stepLine(-1) }, size = 48.dp)
             RoundIcon(
                 if (state.paused) R.drawable.ic_play else R.drawable.ic_pause,
-                if (state.paused) "Продолжить" else "Пауза",
+                stringResource(if (state.paused) R.string.common_cd_resume else R.string.common_cd_pause),
                 { app.engine.togglePause() },
                 size = 68.dp,
                 bg = Palette.Accent,
                 tint = Palette.OnAccent,
             )
-            RoundIcon(R.drawable.ic_down, "Строка вперёд", { app.engine.stepLine(1) }, size = 48.dp)
+            RoundIcon(R.drawable.ic_down, stringResource(R.string.common_cd_line_forward), { app.engine.stepLine(1) }, size = 48.dp)
             RoundIcon(
                 if (state.scroll == SessionEngine.Scroll.VOICE) R.drawable.ic_mic else R.drawable.ic_speed,
-                "Голос или скорость",
+                stringResource(R.string.common_cd_scroll_mode),
                 {
                     app.engine.setScroll(
                         if (state.scroll == SessionEngine.Scroll.VOICE) SessionEngine.Scroll.AUTO else SessionEngine.Scroll.VOICE,
@@ -102,12 +103,14 @@ fun RehearsalScreen(onBack: () -> Unit) {
     }
 }
 
+@Composable
 fun statusOf(s: SessionEngine.State): Pair<Color, String> = when {
-    s.starting -> Palette.TextMuted to "запуск…"
-    !s.listening -> Palette.TextMuted to "не слушаю"
-    s.paused -> Palette.Accent to "пауза"
-    s.scroll == SessionEngine.Scroll.AUTO -> Palette.Accent to "по скорости ${App.instance.settings.autoScrollWpm} сл/мин"
-    s.silencedBySystem == true -> Palette.Danger to "микрофон занят другим приложением"
-    s.autoFallback -> Palette.Danger to "не слышу, прокручиваю сам"
-    else -> Palette.Success to "слушаю"
+    s.starting -> Palette.TextMuted to stringResource(R.string.rehearsal_status_starting)
+    !s.listening -> Palette.TextMuted to stringResource(R.string.rehearsal_status_idle)
+    s.paused -> Palette.Accent to stringResource(R.string.rehearsal_status_paused)
+    s.scroll == SessionEngine.Scroll.AUTO ->
+        Palette.Accent to stringResource(R.string.rehearsal_status_auto, App.instance.settings.autoScrollWpm)
+    s.silencedBySystem == true -> Palette.Danger to stringResource(R.string.rehearsal_status_mic_busy)
+    s.autoFallback -> Palette.Danger to stringResource(R.string.rehearsal_status_fallback)
+    else -> Palette.Success to stringResource(R.string.rehearsal_status_listening)
 }

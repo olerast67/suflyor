@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,26 +48,32 @@ fun JournalScreen(onBack: () -> Unit) {
     val listState = rememberLazyListState()
     LaunchedEffect(lines.size) { if (lines.isNotEmpty()) listState.scrollToItem(lines.size - 1) }
 
+    // The header is English like the journal lines under it: the text goes into bug reports.
     fun fullText(): String = buildString {
         val s = App.instance.settings
-        append("Суфлёр ${BuildConfig.VERSION_NAME}, ${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})\n")
-        append("Источник ${AudioCapture.sourceName(s.audioSource)}, ${s.sampleRate} Гц, ")
-        append("спецвозможности ${if (PrompterAccessibilityService.instance != null) "вкл" else "выкл"}\n\n")
+        append("Suflyor ${BuildConfig.VERSION_NAME}, ${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})\n")
+        append("Source ${AudioCapture.sourceName(s.audioSource)}, ${s.sampleRate} Hz, ")
+        append("accessibility ${if (PrompterAccessibilityService.instance != null) "on" else "off"}\n\n")
         append(DiagLog.text())
     }
+    val clipLabel = stringResource(R.string.journal_clip_label)
+    val copied = stringResource(R.string.journal_toast_copied)
+    val shareTitle = stringResource(R.string.journal_share_title)
 
     Column(Modifier.fillMaxSize().background(Palette.Bg).statusBarsPadding().navigationBarsPadding()) {
-        TopBar("Журнал", onBack) {
+        TopBar(stringResource(R.string.journal_title), onBack) {
             IconButton(onClick = {
-                context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Журнал суфлёра", fullText()))
-                Toast.makeText(context, "Журнал скопирован", Toast.LENGTH_SHORT).show()
-            }) { Ic(R.drawable.ic_copy, "Скопировать", tint = Palette.TextSecondary) }
+                context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(clipLabel, fullText()))
+                Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
+            }) { Ic(R.drawable.ic_copy, stringResource(R.string.journal_cd_copy), tint = Palette.TextSecondary) }
             IconButton(onClick = {
                 context.startActivity(
-                    Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, fullText()), "Отправить журнал"),
+                    Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, fullText()), shareTitle),
                 )
-            }) { Ic(R.drawable.ic_share, "Поделиться", tint = Palette.TextSecondary) }
-            IconButton(onClick = { DiagLog.clear() }) { Ic(R.drawable.ic_delete, "Очистить", tint = Palette.TextSecondary) }
+            }) { Ic(R.drawable.ic_share, stringResource(R.string.journal_cd_share), tint = Palette.TextSecondary) }
+            IconButton(onClick = { DiagLog.clear() }) {
+                Ic(R.drawable.ic_delete, stringResource(R.string.journal_cd_clear), tint = Palette.TextSecondary)
+            }
         }
         LazyColumn(Modifier.weight(1f).padding(horizontal = 14.dp), state = listState) {
             items(lines) { line ->

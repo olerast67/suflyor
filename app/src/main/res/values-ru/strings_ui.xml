@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Library -->
+    <string name="library_title">Сценарии</string>
+    <string name="library_search_hint">Поиск</string>
+    <string name="library_search_empty">Ничего не нашлось</string>
+    <string name="library_cd_add">Добавить сценарий</string>
+    <string name="library_add_title">Новый сценарий</string>
+    <string name="library_add_file">Открыть файл</string>
+    <string name="library_add_paste">Вставить из буфера</string>
+    <string name="library_add_paste_hint">Текст, скопированный в любом приложении</string>
+    <string name="library_add_write">Написать</string>
+    <string name="library_add_write_hint">Набрать или вставить текст вручную</string>
+    <string name="library_setup_title">Настрой работу поверх камеры</string>
+    <string name="library_setup_progress" tools:ignore="PluralsCandidate">Готово %1$d из %2$d: нужны микрофон и служба «Суфлёр»</string>
+
+    <!-- Editor -->
+    <string name="editor_title_new">Новый сценарий</string>
+    <string name="editor_title_edit">Правка</string>
+    <string name="editor_action_done">Готово</string>
+    <string name="editor_hint_title">Название</string>
+    <string name="editor_hint_text">Вставь или напиши текст. Каждый абзац — с новой строки.</string>
+    <string name="editor_syntax_help">**жирный** — акцент · # заголовок · [пометка] — видна, но не читается</string>
+
+    <!-- Rehearsal -->
+    <string name="rehearsal_status_starting">запуск…</string>
+    <string name="rehearsal_status_idle">не слушаю</string>
+    <string name="rehearsal_status_paused">пауза</string>
+    <string name="rehearsal_status_auto">по скорости %1$d сл/мин</string>
+    <string name="rehearsal_status_mic_busy">микрофон занят другим приложением</string>
+    <string name="rehearsal_status_fallback">не слышу, прокручиваю сам</string>
+    <string name="rehearsal_status_listening">слушаю</string>
+
+    <!-- Log -->
+    <string name="journal_title">Журнал</string>
+    <string name="journal_clip_label">Журнал суфлёра</string>
+    <string name="journal_toast_copied">Журнал скопирован</string>
+    <string name="journal_cd_copy">Скопировать</string>
+    <string name="journal_share_title">Отправить журнал</string>
+    <string name="journal_cd_share">Поделиться</string>
+    <string name="journal_cd_clear">Очистить</string>
+
+    <!-- −/+ buttons of a setting -->
+    <string name="stepper_cd_decrease">Меньше: %1$s</string>
+    <string name="stepper_cd_increase">Больше: %1$s</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_action_allow">Разрешить</string>
+    <string name="settings_action_open">Открыть</string>
+
+    <string name="settings_section_readiness">Готовность к работе поверх камеры</string>
+    <string name="settings_mic_title">Микрофон</string>
+    <string name="settings_mic_hint">Лучше выбрать «Только во время использования»</string>
+    <string name="settings_a11y_title">Служба «Суфлёр» в спецвозможностях</string>
+    <string name="settings_a11y_not_running">Включена, но не запущена — выключи и включи снова</string>
+    <string name="settings_a11y_hint">Без неё Android глушит микрофон, пока другое приложение снимает видео</string>
+    <string name="settings_a11y_restricted">Если переключатель серый: Настройки → Приложения → %1$s → ⋮ → «Разрешить ограниченные настройки».</string>
+    <string name="settings_app_info">Сведения о приложении</string>
+    <string name="settings_notifications_title">Уведомления</string>
+    <string name="settings_notifications_hint">Значок в шторке, пока суфлёр слушает, и кнопка «Остановить»</string>
+
+    <string name="settings_section_voice">Слежение за голосом</string>
+    <string name="settings_speech_lang_title">Язык речи</string>
+    <string name="settings_speech_lang_auto_hint">Авто выбирает по буквам сценария — сейчас %1$s</string>
+    <string name="settings_speech_lang_fixed_hint">Суфлёр ждёт этот язык в любом сценарии</string>
+    <string name="settings_speech_lang_name_ru">русский</string>
+    <string name="settings_speech_lang_name_en">английский</string>
+    <string name="settings_lead_title">Упреждение</string>
+    <plurals name="settings_lead_value">
+        <item quantity="one">%d сл.</item>
+        <item quantity="few">%d сл.</item>
+        <item quantity="many">%d сл.</item>
+        <item quantity="other">%d сл.</item>
+    </plurals>
+    <string name="settings_lead_hint">Насколько текст забегает вперёд распознанного, пока ты говоришь</string>
+    <string name="settings_highlight_title">Подсвечивать следующее слово</string>
+    <string name="settings_highlight_hint">Иначе видна только текущая строка</string>
+    <string name="settings_hotwords_title">Подсказывать слова сценария</string>
+    <string name="settings_hotwords_hint">Точнее узнаёт редкие слова. Применится со следующего запуска</string>
+
+    <string name="settings_section_text">Текст</string>
+    <string name="settings_phrase_title">По строке на фразу</string>
+    <string name="settings_phrase_hint">Разбивать текст на фразы, которые говорятся на одном дыхании</string>
+    <string name="settings_max_words_title">Слов в строке</string>
+    <string name="settings_max_words_value">до %1$d</string>
+    <string name="settings_font_title">Размер текста</string>
+
+    <string name="settings_section_tile">Плитка в шторке</string>
+    <string name="settings_tile_hint">Опусти шторку и нажми «Суфлёр» — окно с текущим сценарием появится поверх открытого приложения. Нажми ещё раз, чтобы остановить.</string>
+    <string name="settings_tile_add">Добавить плитку в шторку</string>
+    <string name="settings_tile_manual">Опусти шторку полностью → ✎ (изменить) → перетащи плитку «Суфлёр» наверх.</string>
+    <string name="settings_tile_label">Суфлёр</string>
+    <string name="settings_tile_added">Плитка добавлена в шторку</string>
+    <string name="settings_tile_already_added">Плитка уже в шторке</string>
+
+    <string name="settings_section_keys">Пульт и кнопки</string>
+    <string name="settings_keys_title">Управлять кнопками</string>
+    <string name="settings_keys_hint">Громкость, Bluetooth-пульт, кольцо, клавиатура — пока окно поверх камеры</string>
+    <string name="settings_volume_keys_title">Кнопки громкости тоже</string>
+    <string name="settings_volume_keys_hint">Выключи, если пульт кнопкой громкости включает запись в камере</string>
+    <string name="settings_key_waiting">Нажми кнопку на пульте…</string>
+    <string name="settings_key_none">не назначено</string>
+    <string name="settings_key_assign">Назначить</string>
+    <string name="settings_keys_reset">Вернуть кнопки по умолчанию</string>
+
+    <string name="settings_section_overlay">Окно поверх камеры</string>
+    <string name="settings_rotate_title">Поворачивать для горизонтальной съёмки</string>
+    <string name="settings_rotate_hint">Телефон боком — текст встаёт у объектива и поворачивается</string>
+    <string name="settings_lines_title">Строк в окне</string>
+    <string name="settings_opacity_title">Плотность фона</string>
+    <string name="settings_opacity_hint">Меньше — лучше видно себя сквозь окно</string>
+    <string name="settings_diag_title">Диагностика в окне</string>
+    <string name="settings_diag_hint">Что слышит суфлёр и кто ещё пишет звук</string>
+
+    <string name="settings_section_autoscroll">Автопрокрутка</string>
+    <string name="settings_wpm_title">Скорость</string>
+    <string name="settings_wpm_hint">Слов в минуту: для режима «по скорости» и расчёта хронометража</string>
+    <string name="settings_countdown_title">Отсчёт перед стартом</string>
+    <string name="settings_countdown_off">нет</string>
+    <string name="settings_countdown_value">%1$d с</string>
+    <string name="settings_countdown_hint" tools:ignore="TypographyDashes">3-2-1 перед прокруткой по скорости</string>
+
+    <string name="settings_section_mic">Микрофон</string>
+    <string name="settings_audio_source">Источник звука</string>
+    <string name="settings_source_speech">Для речи</string>
+    <string name="settings_source_standard">Обычный</string>
+    <string name="settings_source_raw">Без обработки</string>
+    <string name="settings_sample_rate">Частота</string>
+    <string name="settings_rate_khz">%1$d кГц</string>
+
+    <string name="settings_section_about">О приложении</string>
+    <string name="settings_language_title">Язык приложения</string>
+    <string name="settings_language_value">Русский</string>
+    <string name="settings_log_hint">Что происходило с микрофоном и распознаванием</string>
+    <string name="settings_about_version">Суфлёр %1$s · распознавание sherpa-onnx; модели: alphacep (русский), icefall LibriSpeech (английский), Apache-2.0</string>
+</resources>
