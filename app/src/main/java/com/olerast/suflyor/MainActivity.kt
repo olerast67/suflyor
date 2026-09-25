@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.olerast.suflyor.diag.DiagLog
 import com.olerast.suflyor.doc.DocumentImporter
+import com.olerast.suflyor.doc.ImportError
 import com.olerast.suflyor.doc.ImportException
 import com.olerast.suflyor.doc.MarkdownImporter
 import com.olerast.suflyor.doc.PdfTextExtractor
@@ -42,6 +43,7 @@ import com.olerast.suflyor.ui.RehearsalScreen
 import com.olerast.suflyor.ui.ScriptScreen
 import com.olerast.suflyor.ui.SettingsScreen
 import com.olerast.suflyor.ui.SuflyorTheme
+import com.olerast.suflyor.ui.text
 import com.olerast.suflyor.ui.toEditableText
 import java.io.ByteArrayOutputStream
 
@@ -252,7 +254,7 @@ class MainActivity : ComponentActivity() {
 
     /** Only app settings can bring the microphone back once it is denied for good. */
     private fun openMicSettings() {
-        toast("Микрофон запрещён — включи его в разрешениях приложения")
+        toast(getString(R.string.main_mic_blocked))
         startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
     }
 
@@ -274,18 +276,19 @@ class MainActivity : ComponentActivity() {
             return
         }
         val launch = target.launchIntent(this) ?: return
-        runCatching { startActivity(launch) }.onFailure { toast("Не получилось открыть ${getString(target.label)}") }
+        runCatching { startActivity(launch) }.onFailure { toast(getString(R.string.main_open_app_failed, getString(target.label))) }
     }
 
     private fun saveEditor(id: String?, old: ScriptDocument?, title: String, text: String) {
+        val format = old?.format ?: ScriptDocument.FORMAT_TEXT
         val doc = try {
-            DocumentImporter.checkSize(MarkdownImporter.parse(text, title).copy(title = title, format = old?.format ?: "Текст"))
+            DocumentImporter.checkSize(MarkdownImporter.parse(text, title).copy(title = title, format = format))
         } catch (e: ImportException) {
-            toast(e.message ?: "Слишком длинный текст")
+            toast(e.error.text(this))
             return
         }
         if (doc.isEmpty) {
-            toast("В тексте нет слов")
+            toast(getString(R.string.main_no_words))
             return
         }
         if (id == null) {
@@ -313,12 +316,15 @@ class MainActivity : ComponentActivity() {
                     val text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
                     when {
                         stream != null -> importUri(stream)
-                        !text.isNullOrBlank() -> importText(text, intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: "Из «Поделиться»")
-                        else -> toast("Нечего импортировать")
+                        !text.isNullOrBlank() -> importText(
+                            text,
+                            intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: getString(R.string.import_title_shared),
+                        )
+                        else -> toast(getString(R.string.import_nothing))
                     }
                 }
             }
-        }.onFailure { DiagLog.e("Не удалось принять данные из другого приложения", it) }
+        }.onFailure { DiagLog.e("Couldn't accept data from another app", it) }
     }
 
     private fun importText(text: String, title: String) {
@@ -331,9 +337,17 @@ class MainActivity : ComponentActivity() {
             val result = runCatching(parse)
             runOnUiThread {
                 result.onSuccess(::addScript).onFailure {
-                    val msg = if (it is ImportException) it.message else "Не получилось прочитать файл: ${it.message}"
-                    DiagLog.e("Импорт: $msg", if (it is ImportException) null else it)
-                    toast(msg ?: "Ошибка импорта")
+                    if (it is ImportException) {
+                        DiagLog.e("Import failed: ${it.error}")
+                        toast(it.error.text(this))
+                    } else {
+                        DiagLog.e("Import failed: couldn't read the file", it)
+                        val detail = it.message
+                        toast(
+                            if (detail != null) getString(R.string.import_error_read_failed, detail)
+                            else getString(R.string.import_error_generic),
+                        )
+                    }
                 }
             }
         }.start()
@@ -341,17 +355,18 @@ class MainActivity : ComponentActivity() {
 
     private fun addScript(doc: ScriptDocument) {
         openScript(app.scripts.add(doc))
-        DiagLog.i("Сценарий: «${doc.title}» (${doc.format}), абзацев ${doc.paragraphs.size}, слов ${app.scripts.model.spokenTokens}")
+        DiagLog.i("Script: “${doc.title}” (${doc.format}), ${doc.paragraphs.size} paragraphs, ${app.scripts.model.spokenTokens} words")
     }
 
     private fun importUri(uri: Uri) {
         // Only documents handed over by other apps. A file:// or android.resource:// URI from an intent would make
         // this app read with its own permissions — including its private files.
         if (uri.scheme != ContentResolver.SCHEME_CONTENT) {
-            toast("Не получилось открыть файл")
+            toast(ImportError.CannotOpen.text(this))
             return
         }
-        toast("Открываю…")
+        toast(getString(R.string.import_opening))
+        val untitled = getString(R.string.common_untitled)
         importInBackground {
             val name = queryName(uri)
             val mime = contentResolver.getType(uri)
@@ -363,12 +378,12 @@ class MainActivity : ComponentActivity() {
                     val n = input.read(buf)
                     if (n < 0) break
                     total += n
-                    if (total > DocumentImporter.MAX_BYTES) throw ImportException("Файл слишком большой")
+                    if (total > DocumentImporter.MAX_BYTES) throw ImportException(ImportError.FileTooBig(DocumentImporter.MAX_MB))
                     out.write(buf, 0, n)
                 }
                 out.toByteArray()
-            } ?: throw ImportException("Не удалось открыть файл")
-            DocumentImporter.import(bytes, name, mime) { b, t -> PdfTextExtractor.extract(this, b, t) }
+            } ?: throw ImportException(ImportError.CannotOpen)
+            DocumentImporter.import(bytes, name, mime, untitled) { b, t -> PdfTextExtractor.extract(this, b, t) }
         }
     }
 
@@ -382,10 +397,10 @@ class MainActivity : ComponentActivity() {
         val cm = getSystemService(ClipboardManager::class.java)
         val text = cm.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString()
         if (text.isNullOrBlank()) {
-            toast("В буфере нет текста")
+            toast(getString(R.string.import_clipboard_empty))
             return
         }
-        importText(text, "Из буфера")
+        importText(text, getString(R.string.import_title_clipboard))
     }
 
     private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()

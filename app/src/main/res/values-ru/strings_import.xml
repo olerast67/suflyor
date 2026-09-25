@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_error_empty_file">Файл пустой</string>
+    <string name="import_error_file_too_big">Файл больше %1$d МБ — это точно сценарий?</string>
+    <string name="import_error_text_file_too_big">Слишком большой текстовый файл для сценария</string>
+    <string name="import_error_legacy_doc">Старый формат .doc (Word 97–2003) не поддерживается. Пересохрани файл как .docx или .pdf.</string>
+    <string name="import_error_encrypted">Документ защищён паролем. Сними пароль и открой снова.</string>
+    <string name="import_error_unknown_zip">Это архив, но не DOCX и не ODT</string>
+    <string name="import_error_no_text">В файле не нашлось текста</string>
+    <string name="import_error_not_text">Это не текстовый файл</string>
+    <string name="import_error_pasted_too_long">Слишком длинный текст для сценария</string>
+    <string name="import_error_text_too_long_count">Текст слишком длинный: %1$d тыс. знаков, суфлёр принимает до %2$d тыс.</string>
+    <string name="import_error_text_too_long_max">Текст слишком длинный: суфлёр принимает до %1$d тыс. знаков</string>
+    <string name="import_error_not_rtf">Это не RTF-файл</string>
+    <string name="import_error_zip_too_many_files">В архиве слишком много файлов</string>
+    <string name="import_error_zip_too_large">Архив распаковывается в слишком большой объём</string>
+    <string name="import_error_unsafe">Документ повреждён или небезопасен</string>
+    <string name="import_error_not_docx">В архиве нет word/document.xml — это не документ Word</string>
+    <string name="import_error_not_odt">В архиве нет content.xml — это не документ ODT</string>
+    <string name="import_error_pdf_unsupported">Чтение PDF на этой версии Android пока не поддерживается. Открой DOCX или TXT.</string>
+    <string name="import_error_pdf_password">PDF защищён паролем</string>
+    <string name="import_error_pdf_scan">В PDF нет текстового слоя — похоже, это скан. Распознавание сканов добавим позже.</string>
+    <string name="import_error_open_failed">Не получилось открыть файл</string>
+    <string name="import_error_read_failed">Не получилось прочитать файл: %1$s</string>
+    <string name="import_error_generic">Ошибка импорта</string>
+
+    <string name="import_warning_pdf_paragraphs">Абзацы в PDF восстановлены по строкам — проверь, как разбился текст.</string>
+    <plurals name="import_warning_docx_tables">
+        <item quantity="one">В документе %1$d таблица: её ячейки показаны по порядку, как обычный текст.</item>
+        <item quantity="few">В документе %1$d таблицы: их ячейки показаны по порядку, как обычный текст.</item>
+        <item quantity="many">В документе %1$d таблиц: их ячейки показаны по порядку, как обычный текст.</item>
+        <item quantity="other">В документе %1$d таблицы: их ячейки показаны по порядку, как обычный текст.</item>
+    </plurals>
+
+    <string name="import_title_shared">Из «Поделиться»</string>
+    <string name="import_title_clipboard">Из буфера</string>
+
+    <string name="import_opening">Открываю…</string>
+    <string name="import_nothing">Нечего импортировать</string>
+    <string name="import_clipboard_empty">В буфере нет текста</string>
+
+    <string name="main_mic_blocked">Микрофон запрещён — включи его в разрешениях приложения</string>
+    <string name="main_open_app_failed">Не получилось открыть %1$s</string>
+    <string name="main_no_words">В тексте нет слов</string>
+
+    <string name="script_cd_edit">Редактировать</string>
+    <string name="script_stats">≈ %1$s при %2$d сл/мин · %3$s · %4$s</string>
+    <string name="script_setup_mic">Разреши микрофон, чтобы суфлёр слышал голос</string>
+    <string name="script_setup_a11y">Включи службу «Суфлёр» в спецвозможностях — иначе во время записи суфлёр не услышит голос</string>
+    <string name="script_action_overlay">Поверх камеры</string>
+    <string name="script_action_rehearse">Репетиция</string>
+    <string name="script_delete_title">Удалить сценарий?</string>
+    <string name="script_delete_message">«%1$s» пропадёт из библиотеки. Исходный файл на телефоне останется.</string>
+
+    <string name="sample_title">Пример</string>
+    <string name="sample_script"># Пример сценария\n\nПривет! Сегодня я покажу, как суфлёр следит за голосом и сам прокручивает текст, чтобы не приходилось за ним бегать.\n\n**Прочитай пару строк**, посмотри в камеру, потом снова загляни в текст. Если собьёшься и начнёшь фразу заново, текст вернётся к её началу.\n\n[Пауза, улыбка] А если замолчишь, текст просто подождёт тебя.\n\nПопробуй прочитать этот абзац поверх Instagram, TikTok или камеры — суфлёр будет слышать тебя и во время записи.</string>
+</resources>

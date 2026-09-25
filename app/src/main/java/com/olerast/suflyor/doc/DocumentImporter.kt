@@ -5,7 +5,8 @@ object DocumentImporter {
     enum class Kind { TXT, MARKDOWN, DOCX, ODT, RTF, HTML, PDF, LEGACY_DOC, ENCRYPTED_OFFICE, UNKNOWN_ZIP }
 
     /** Containers (PDF, DOCX, ODT) may be big because of pictures; the text inside is what is capped. */
-    const val MAX_BYTES = 40 * 1024 * 1024
+    const val MAX_MB = 40
+    const val MAX_BYTES = MAX_MB * 1024 * 1024
 
     /** Plain-text formats: several MB of text is already far beyond any script. */
     const val MAX_TEXT_BYTES = 8 * 1024 * 1024
@@ -41,12 +42,19 @@ object DocumentImporter {
     }
 
     /**
+     * @param untitled title for a file without a name, in the UI language.
      * @param pdf PDF text extraction is platform specific, so the caller supplies it.
      */
-    fun import(bytes: ByteArray, name: String?, mime: String?, pdf: (ByteArray, String) -> ScriptDocument): ScriptDocument {
-        if (bytes.isEmpty()) throw ImportException("Файл пустой")
-        if (bytes.size > MAX_BYTES) throw ImportException("Файл больше ${MAX_BYTES / 1024 / 1024} МБ — это точно сценарий?")
-        val title = name?.substringBeforeLast('.')?.ifBlank { null } ?: "Без названия"
+    fun import(
+        bytes: ByteArray,
+        name: String?,
+        mime: String?,
+        untitled: String,
+        pdf: (ByteArray, String) -> ScriptDocument,
+    ): ScriptDocument {
+        if (bytes.isEmpty()) throw ImportException(ImportError.EmptyFile)
+        if (bytes.size > MAX_BYTES) throw ImportException(ImportError.FileTooBig(MAX_MB))
+        val title = name?.substringBeforeLast('.')?.ifBlank { null } ?: untitled
         val kind = detect(bytes, name, mime)
         // RTF and HTML carry pictures inline (hex, base64), so only plain text formats get the tighter limit;
         // their parsers skip the pictures in one linear pass and the extracted text is capped by MAX_CHARS.
@@ -55,7 +63,7 @@ object DocumentImporter {
             Kind.HTML -> MAX_MARKUP_BYTES
             else -> MAX_BYTES
         }
-        if (bytes.size > limit) throw ImportException("Слишком большой текстовый файл для сценария")
+        if (bytes.size > limit) throw ImportException(ImportError.TextFileTooBig)
         val doc = when (kind) {
             Kind.PDF -> pdf(bytes, title)
             Kind.DOCX -> DocxImporter.parse(bytes, title)
@@ -64,27 +72,23 @@ object DocumentImporter {
             Kind.HTML -> HtmlImporter.parse(TextDecoding.decode(bytes), title)
             Kind.MARKDOWN -> MarkdownImporter.parse(TextDecoding.decode(bytes), title)
             Kind.TXT -> PlainTextImporter.parse(requireText(TextDecoding.decode(bytes)), title)
-            Kind.LEGACY_DOC -> throw ImportException(
-                "Старый формат .doc (Word 97–2003) не поддерживается. Пересохрани файл как .docx или .pdf.",
-            )
-            Kind.ENCRYPTED_OFFICE -> throw ImportException("Документ защищён паролем. Сними пароль и открой снова.")
-            Kind.UNKNOWN_ZIP -> throw ImportException("Это архив, но не DOCX и не ODT")
+            Kind.LEGACY_DOC -> throw ImportException(ImportError.LegacyDoc)
+            Kind.ENCRYPTED_OFFICE -> throw ImportException(ImportError.EncryptedOffice)
+            Kind.UNKNOWN_ZIP -> throw ImportException(ImportError.UnknownZip)
         }
-        if (doc.isEmpty) throw ImportException("В файле не нашлось текста")
+        if (doc.isEmpty) throw ImportException(ImportError.NoText)
         return checkSize(doc)
     }
 
     fun fromPlainText(text: String, title: String): ScriptDocument {
-        if (text.length > MAX_CHARS * 2) throw ImportException("Слишком длинный текст для сценария")
+        if (text.length > MAX_CHARS * 2) throw ImportException(ImportError.PastedTextTooLong)
         val looksLikeMarkdown = Regex("(?m)^(#{1,6} |[-*] |> )|\\*\\*[^*\\n]{1,500}\\*\\*").containsMatchIn(text)
         return if (looksLikeMarkdown) MarkdownImporter.parse(text, title) else PlainTextImporter.parse(text, title)
     }
 
     fun checkSize(doc: ScriptDocument): ScriptDocument {
         val chars = doc.paragraphs.sumOf { it.text.length }
-        if (chars > MAX_CHARS) {
-            throw ImportException("Текст слишком длинный: ${chars / 1000} тыс. знаков, суфлёр принимает до ${MAX_CHARS / 1000} тыс.")
-        }
+        if (chars > MAX_CHARS) throw ImportException(ImportError.TextTooLong(chars / 1000, MAX_CHARS / 1000))
         return doc
     }
 
@@ -93,7 +97,7 @@ object DocumentImporter {
         val head = text.take(8192)
         if (head.isEmpty()) return text
         val controls = head.count { it < ' ' && it != '\n' && it != '\r' && it != '\t' }
-        if (head.contains('\u0000') || controls * 20 > head.length) throw ImportException("Это не текстовый файл")
+        if (head.contains('\u0000') || controls * 20 > head.length) throw ImportException(ImportError.NotText)
         return text
     }
 

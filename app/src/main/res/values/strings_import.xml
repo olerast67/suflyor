@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Importing files and text, the main app flow, the script screen and the built-in sample. -->
+<resources>
+    <!-- Import errors (doc/ImportError, mapped in ui/Messages.kt). -->
+    <string name="import_error_empty_file">The file is empty</string>
+    <string name="import_error_file_too_big">The file is over %1$d MB — is it really a script?</string>
+    <string name="import_error_text_file_too_big">This text file is too big for a script</string>
+    <string name="import_error_legacy_doc">The old .doc format (Word 97–2003) isn\'t supported. Save the file as .docx or .pdf.</string>
+    <string name="import_error_encrypted">The document is password-protected. Remove the password and open it again.</string>
+    <string name="import_error_unknown_zip">This is an archive, but not a DOCX or ODT file</string>
+    <string name="import_error_no_text">No text found in the file</string>
+    <string name="import_error_not_text">This isn\'t a text file</string>
+    <string name="import_error_pasted_too_long">The text is too long for a script</string>
+    <string name="import_error_text_too_long_count">The text is too long: %1$dK characters. Suflyor takes up to %2$dK.</string>
+    <string name="import_error_text_too_long_max">The text is too long: Suflyor takes up to %1$dK characters.</string>
+    <string name="import_error_not_rtf">This isn\'t an RTF file</string>
+    <string name="import_error_zip_too_many_files">The archive contains too many files</string>
+    <string name="import_error_zip_too_large">The archive unpacks to too much data</string>
+    <string name="import_error_unsafe">The document is damaged or unsafe</string>
+    <string name="import_error_not_docx">There\'s no word/document.xml inside — this isn\'t a Word document</string>
+    <string name="import_error_not_odt">There\'s no content.xml inside — this isn\'t an ODT document</string>
+    <string name="import_error_pdf_unsupported">This Android version can\'t read PDF text yet. Open a DOCX or TXT file instead.</string>
+    <string name="import_error_pdf_password">The PDF is password-protected</string>
+    <string name="import_error_pdf_scan">This PDF has no text layer — it looks like a scan. Scan support is coming later.</string>
+    <string name="import_error_open_failed">Couldn\'t open the file</string>
+    <!-- %1$s: the system's own error text. -->
+    <string name="import_error_read_failed">Couldn\'t read the file: %1$s</string>
+    <string name="import_error_generic">Import failed</string>
+
+    <!-- Import warnings, shown under the script. -->
+    <string name="import_warning_pdf_paragraphs">Paragraphs were rebuilt from the PDF\'s lines — check how the text was split.</string>
+    <plurals name="import_warning_docx_tables">
+        <item quantity="one">The document has a table: its cells are shown in order, as plain text.</item>
+        <item quantity="other">The document has %1$d tables: their cells are shown in order, as plain text.</item>
+    </plurals>
+
+    <!-- Default titles of imported text; saved with the script. -->
+    <string name="import_title_shared">Shared text</string>
+    <string name="import_title_clipboard">From clipboard</string>
+
+    <string name="import_opening">Opening…</string>
+    <string name="import_nothing">Nothing to import</string>
+    <string name="import_clipboard_empty">There\'s no text in the clipboard</string>
+
+    <string name="main_mic_blocked">The microphone is blocked — turn it on in the app\'s permissions</string>
+    <!-- %1$s: the app that was to open after the window, e.g. Instagram or Camera. -->
+    <string name="main_open_app_failed">Couldn\'t open %1$s</string>
+    <string name="main_no_words">There are no words in the text</string>
+
+    <!-- Script screen. -->
+    <string name="script_cd_edit">Edit</string>
+    <!-- %1$s duration, %2$d words per minute, %3$s word count (words_count), %4$s format (DOCX, PDF, text…). -->
+    <string name="script_stats">≈ %1$s at %2$d wpm · %3$s · %4$s</string>
+    <string name="script_setup_mic">Allow the microphone so Suflyor can hear you</string>
+    <string name="script_setup_a11y">Turn on the Suflyor service in Accessibility — otherwise Suflyor can\'t hear you while recording</string>
+    <string name="script_action_overlay">Over the camera</string>
+    <string name="script_action_rehearse">Rehearse</string>
+    <string name="script_delete_title">Delete script?</string>
+    <string name="script_delete_message">“%1$s” will be removed from the library. The original file stays on your phone.</string>
+
+    <!--
+        Built-in sample, created once in the UI language when the library is empty. Markdown-light: # heading,
+        **bold**, [note] (shown, not read). One line with \n: the resource compiler would join wrapped lines.
+    -->
+    <string name="sample_title">Sample</string>
+    <string name="sample_script"># Sample script\n\nHi! Today I\'ll show you how this teleprompter follows your voice and scrolls the text by itself, so you never have to chase it.\n\n**Read a couple of lines**, look into the camera, then glance back at the text. If you slip and start a sentence over, the text jumps back to where that sentence begins.\n\n[Pause, smile] And if you go quiet, the text simply waits for you.\n\nNow try reading this paragraph over the camera, Instagram or TikTok — the prompter keeps listening to you even while you record.</string>
+</resources>

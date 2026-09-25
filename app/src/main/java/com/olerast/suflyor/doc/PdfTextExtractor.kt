@@ -18,7 +18,7 @@ object PdfTextExtractor {
         (Build.VERSION.SDK_INT >= 31 && SdkExtensions.getExtensionVersion(Build.VERSION_CODES.S) >= 13)
 
     fun extract(context: Context, bytes: ByteArray, title: String): ScriptDocument {
-        if (!isSupported()) throw ImportException("Чтение PDF на этой версии Android пока не поддерживается. Открой DOCX или TXT.")
+        if (!isSupported()) throw ImportException(ImportError.PdfUnsupported)
         val tmp = File.createTempFile("import", ".pdf", context.cacheDir)
         try {
             tmp.writeBytes(bytes)
@@ -26,16 +26,14 @@ object PdfTextExtractor {
                 try {
                     if (Build.VERSION.SDK_INT >= 35) readPlatform(pfd) else readPreV(pfd)
                 } catch (e: SecurityException) {
-                    throw ImportException("PDF защищён паролем")
+                    throw ImportException(ImportError.PdfPassword)
                 }
             }
             val paragraphs = PdfTextLayout.paragraphs(pages).mapNotNull { text ->
                 ParagraphBuilder().apply { append(text) }.build()
             }
-            if (paragraphs.isEmpty()) {
-                throw ImportException("В PDF нет текстового слоя — похоже, это скан. Распознавание сканов добавим позже.")
-            }
-            return ScriptDocument(title, "PDF", paragraphs, listOf("Абзацы в PDF восстановлены по строкам — проверь, как разбился текст."))
+            if (paragraphs.isEmpty()) throw ImportException(ImportError.PdfNoTextLayer)
+            return ScriptDocument(title, "PDF", paragraphs, listOf(ImportWarning.PdfParagraphsRebuilt))
         } finally {
             tmp.delete()
         }
@@ -57,7 +55,7 @@ object PdfTextExtractor {
             val text = page(i)
             chars += text.length
             if (chars > DocumentImporter.MAX_CHARS * 2) {
-                throw ImportException("Текст слишком длинный: суфлёр принимает до ${DocumentImporter.MAX_CHARS / 1000} тыс. знаков")
+                throw ImportException(ImportError.TextTooLong(null, DocumentImporter.MAX_CHARS / 1000))
             }
             out += text
         }

@@ -29,7 +29,7 @@ internal object Zip {
         ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
             entries@ while (out.size < names.size) {
                 val entry = zip.nextEntry ?: break
-                if (++count > MAX_ENTRIES) throw ImportException("В архиве слишком много файлов")
+                if (++count > MAX_ENTRIES) throw ImportException(ImportError.ZipTooManyFiles)
                 val wanted = entry.name in names
                 val buf = if (wanted) ByteArrayOutputStream() else null
                 val chunk = ByteArray(64 * 1024)
@@ -40,7 +40,7 @@ internal object Zip {
                     total += n
                     budget -= n
                     if (wanted && (total > MAX_ENTRY || budget < 0)) {
-                        throw ImportException("Архив распаковывается в слишком большой объём")
+                        throw ImportException(ImportError.ZipTooLarge)
                     }
                     if (budget < 0) break@entries
                     buf?.write(chunk, 0, n)
@@ -74,8 +74,6 @@ internal object Zip {
 }
 
 internal object Sax {
-    private const val UNSAFE = "Документ повреждён или небезопасен"
-
     private class DtdRejected : SAXException("DTD")
 
     /** Tests: behave like Android, where the disallow-doctype-decl feature doesn't exist and only NoDtd guards. */
@@ -91,7 +89,7 @@ internal object Sax {
     fun parse(bytes: ByteArray, handler: DefaultHandler) {
         val head = String(bytes, 0, minOf(bytes.size, 4096), Charsets.ISO_8859_1)
         if (head.contains("<!DOCTYPE", ignoreCase = true) || head.contains("<!ENTITY", ignoreCase = true)) {
-            throw ImportException(UNSAFE)
+            throw ImportException(ImportError.UnsafeDocument)
         }
         val factory = SAXParserFactory.newInstance()
         factory.isNamespaceAware = true
@@ -103,7 +101,7 @@ internal object Sax {
         val guarded = runCatching { parser.setProperty("http://xml.org/sax/properties/lexical-handler", NoDtd) }.isSuccess
         // Without the guard, at least refuse what the text check above can't see: UTF-16 or a DTD after a long prolog.
         if (!guarded && (bytes.indexOf(0.toByte()) >= 0 || String(bytes, Charsets.ISO_8859_1).contains("<!DOCTYPE", ignoreCase = true))) {
-            throw ImportException(UNSAFE)
+            throw ImportException(ImportError.UnsafeDocument)
         }
         try {
             parser.parse(ByteArrayInputStream(bytes), handler)
@@ -112,7 +110,7 @@ internal object Sax {
             (e.exception as? ImportException)?.let { throw it }
             // DtdRejected from our guard (Android), or the JVM parser's own disallow-doctype-decl error.
             if (e is DtdRejected || e.exception is DtdRejected || e.message.orEmpty().contains("DOCTYPE")) {
-                throw ImportException(UNSAFE)
+                throw ImportException(ImportError.UnsafeDocument)
             }
             throw e
         }
@@ -129,9 +127,7 @@ internal const val MAX_NESTED_PARAGRAPHS = 32
 internal class CharBudget(private var left: Int = DocumentImporter.MAX_CHARS * 2) {
     fun take(n: Int) {
         left -= n
-        if (left < 0) {
-            throw ImportException("Текст слишком длинный: суфлёр принимает до ${DocumentImporter.MAX_CHARS / 1000} тыс. знаков")
-        }
+        if (left < 0) throw ImportException(ImportError.TextTooLong(null, DocumentImporter.MAX_CHARS / 1000))
     }
 }
 
@@ -154,14 +150,11 @@ object DocxImporter {
     fun parse(bytes: ByteArray, title: String): ScriptDocument {
         val parts = Zip.read(bytes, setOf("word/document.xml", "word/styles.xml"))
         val document = parts["word/document.xml"]
-            ?: throw ImportException("В архиве нет word/document.xml — это не документ Word")
+            ?: throw ImportException(ImportError.NotDocx)
         val headingStyles = parts["word/styles.xml"]?.let(::headingStyles) ?: emptySet()
         val handler = DocumentHandler(headingStyles)
         Sax.parse(document, handler)
-        val warnings = mutableListOf<String>()
-        if (handler.tables > 0) {
-            warnings += "В документе есть таблицы (${handler.tables}): их ячейки показаны по порядку, как обычный текст."
-        }
+        val warnings = listOfNotNull(ImportWarning.DocxTables(handler.tables).takeIf { handler.tables > 0 })
         return ScriptDocument(title, "DOCX", handler.paragraphs, warnings)
     }
 
@@ -297,7 +290,7 @@ object OdtImporter {
 
     fun parse(bytes: ByteArray, title: String): ScriptDocument {
         val content = Zip.read(bytes, setOf("content.xml"))["content.xml"]
-            ?: throw ImportException("В архиве нет content.xml — это не документ ODT")
+            ?: throw ImportException(ImportError.NotOdt)
         val paragraphs = mutableListOf<Paragraph>()
         Sax.parse(content, object : DefaultHandler() {
             val stack = ArrayDeque<Pair<ParagraphBuilder, Paragraph.Kind>>()
