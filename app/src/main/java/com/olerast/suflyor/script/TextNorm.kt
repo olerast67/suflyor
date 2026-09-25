@@ -2,11 +2,19 @@ package com.olerast.suflyor.script
 
 import java.text.Normalizer
 
-/** Word normalization and fuzzy comparison tuned for Russian speech recognition output. */
+/**
+ * Word normalization and fuzzy comparison tuned for Russian speech recognition output. English speech uses
+ * [EnglishNorm]; [SpeechLang] picks one. Everything here is Russian behaviour and must not change for English's sake.
+ */
 object TextNorm {
     /** Letters, digits and combining marks (stress marks like "замо́к" stay inside the word). */
     val WORD = Regex("[\\p{L}\\p{N}\\p{M}]+")
 
+    /**
+     * Function words. The Latin entries at the end are never reached: [normalizeWord] transliterates Latin before the
+     * lookup ("the" becomes "те"). They stay so Russian weights stay exactly as they are; English stop words live in
+     * [EnglishNorm.STOP].
+     */
     private val STOP = setOf(
         "и", "в", "во", "не", "на", "я", "что", "с", "со", "а", "это", "как", "то", "по", "но", "к", "ко", "у",
         "из", "за", "о", "об", "же", "так", "вы", "мы", "он", "она", "оно", "они", "ты", "его", "ее", "их", "им",
@@ -91,7 +99,10 @@ object TextNorm {
         's' to "с", 't' to "т", 'u' to "у", 'v' to "в", 'w' to "в", 'x' to "кс", 'y' to "и", 'z' to "з",
     )
 
-    /** Rough Latin-to-Cyrillic reading so "YouTube" can match what a Russian recognizer hears ("ютуб"). */
+    /**
+     * Rough Latin-to-Cyrillic reading so "YouTube" can match what a Russian recognizer hears ("ютуб").
+     * Only for Latin words in Russian scripts; an English script is normalized by [EnglishNorm] without it.
+     */
     fun translit(latin: String): String {
         var s = latin
         if (s.length > 3 && s.endsWith("e") && s[s.length - 2] !in "aeiouy") s = s.dropLast(1)

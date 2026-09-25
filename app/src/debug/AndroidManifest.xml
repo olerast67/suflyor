@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only (merged into the main manifest). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Recognizer and tracker benchmark over a WAV file, driven with adb (see AsrBench). -->
+        <receiver
+            android:name="com.olerast.suflyor.bench.AsrBench"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.olerast.suflyor.BENCH" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
