@@ -42,7 +42,7 @@ Send **only** on the network shown. Coins sent on another network are lost for g
 
 ## Goals
 
-- [ ] **English speech recognition and interface** (0.4)
+- [x] **English speech recognition and interface** (0.4)
 - [ ] Language packs: Spanish, German, Italian, Polish, Vietnamese
 - [ ] A few more test phones: Xiaomi, Honor, Pixel
 

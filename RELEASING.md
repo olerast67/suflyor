@@ -29,15 +29,15 @@ How the maintainer publishes Suflyor. Users don't need any of this.
 
 ## Each release
 
-1. In `app/build.gradle.kts`, raise `versionCode` by one and set `versionName`, for example `0.4`.
-2. Add a `## 0.4 — YYYY-MM-DD` section at the top of `CHANGELOG.md`. It becomes the release notes. Write the short store version too: `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and `ru-RU/changelogs/<versionCode>.txt`, at most 500 characters each.
+1. In `app/build.gradle.kts`, raise `versionCode` by one and set `versionName`, for example `0.5`.
+2. Add a `## 0.5 — YYYY-MM-DD` section at the top of `CHANGELOG.md`. It becomes the release notes. Write the short store version too: `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and `ru-RU/changelogs/<versionCode>.txt`, at most 500 characters each.
 3. Run `.\build.ps1` and check the app on the phone with `.\install.ps1`.
 4. Commit everything (the new changelog files too), then tag and push:
    ```bash
    git add -A
-   git commit -m "Release 0.4"
-   git tag v0.4
-   git push origin main v0.4
+   git commit -m "Release 0.5"
+   git tag v0.5
+   git push origin main v0.5
    ```
 5. The [Release workflow](.github/workflows/release.yml) then:
    - checks that the tag matches `versionName`;
@@ -49,7 +49,7 @@ How the maintainer publishes Suflyor. Users don't need any of this.
 
    Obtainium users get the update automatically.
 
-If the workflow fails, fix the problem, delete the tag (`git push --delete origin v0.4`, `git tag -d v0.4`) and tag again. Once a release is published with immutable releases on, its tag can't be reused: bump the version instead.
+If the workflow fails, fix the problem, delete the tag (`git push --delete origin v0.5`, `git tag -d v0.5`) and tag again. Once a release is published with immutable releases on, its tag can't be reused: bump the version instead.
 
 ### Building a signed APK locally
 

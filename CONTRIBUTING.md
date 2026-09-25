@@ -4,13 +4,13 @@ Thanks for wanting to make Suflyor better! Bug reports, testing on your phone, t
 
 ## Reporting bugs
 
-Open an issue using the **Bug report** form. The most useful thing you can attach is the app journal: **Настройки → Журнал → Поделиться** (Settings → Journal → Share). It shows what the microphone and the speech recognizer were doing, and the device model and Android version.
+Open an issue using the **Bug report** form. The most useful thing you can attach is the app log: **Settings → Log → Share** (Настройки → Журнал → Поделиться). It shows what the microphone and the speech recognizer were doing, and the device model and Android version.
 
 Phones differ a lot (Samsung, Xiaomi, Honor…), so "works on my phone / doesn't on mine" reports are valuable too.
 
 ## Building
 
-You need JDK 17 and the Android SDK (platform 36). On first build Gradle downloads the speech library (about 50 MB) and the Russian model (about 28 MB) and checks their SHA-256.
+You need JDK 17 and the Android SDK (platform 36). On first build Gradle downloads the speech library (about 50 MB) and the Russian and English models (about 28 and 73 MB) and checks their SHA-256.
 
 ```bash
 ./gradlew assembleDebug testDebugUnitTest
@@ -27,10 +27,12 @@ On Windows you can also use `.\build.ps1` and `.\install.ps1`. They read `sdk.di
 
 ## Languages
 
-The recognizer is sherpa-onnx, which has streaming models for many languages. Adding a language means:
-1. a model entry in `fetchSpeechAssets` (with its SHA-256);
-2. a config in `SherpaAsr`;
-3. stop words in `TextNorm`.
+The recognizer is sherpa-onnx, which has streaming models for many languages. English and Russian show the pattern for adding one:
+
+1. **Model.** Add its files to `fetchSpeechAssets` in `app/build.gradle.kts` (pinned revision and SHA-256) under `assets/asr-<code>/`, and its config to `SherpaAsr.create`. Check the license allows redistribution in a GPL-3.0 app and add it to THIRD_PARTY_NOTICES.md.
+2. **Speech rules.** Add an entry to `SpeechLang` and a normalizer like `script/EnglishNorm.kt`: how words are split and normalized, stop words, fillers, word weights, stems and similarity, abbreviations. Russian (`TextNorm`) must stay byte-identical: `RussianGoldenTest` guards it.
+3. **Tests.** A tracker test like `EnglishTrackerTest` and a stress test in `TrackerStressTest.kt` with the language's own recognizer noise.
+4. **Interface** (optional, separately): `values-<code>/strings*.xml` and the language in `res/xml/locales_config.xml` and `localeFilters`.
 
 Open an issue first so we can plan it together.
 

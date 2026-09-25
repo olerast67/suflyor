@@ -7,12 +7,12 @@
 - **Accessibility service.** It is used only during a prompter session over another app:
   - Android keeps giving the prompter the microphone while another app (Instagram, TikTok, the camera) records video;
   - the floating window is shown;
-  - volume and remote-control keys move the text. This is on by default with a preset set of keys, and you can turn it off or reassign the keys in Настройки → Пульт и кнопки (Settings → remote and keys).
+  - volume and remote-control keys move the text. This is on by default with a preset set of keys, and you can turn it off or reassign the keys in Settings → Remote and buttons.
 
   It **cannot read screen content** (`canRetrieveWindowContent="false"`). The only thing it notices is the name of the app in front, which goes to the in-app journal. Between sessions it receives no key presses and ignores window events.
 - **Display over other apps** (optional). This permission is only a fallback for showing the prompter window when the accessibility service is off. It gives no access to what is on the screen.
 - **Your scripts** are stored in the app's private storage on the phone and are excluded from cloud backup. They leave the phone only if you share them yourself, or when Android's own phone-to-phone transfer moves your apps to a new device.
-- **The journal** (Настройки → Журнал) keeps technical events in memory, including recognized phrases, so that problems can be diagnosed. It stays there until the app's process ends or you tap "Очистить" (clear), and it leaves the app only if you tap "Поделиться" (share) or "Скопировать" (copy) yourself. Release builds don't copy it to the system log. The bundled speech library may still write technical warnings there (for example, about audio resampling), but never your words.
+- **The log** (Settings → Log) keeps technical events in memory, including recognized phrases, so that problems can be diagnosed. It stays there until the app's process ends or you tap Clear, and it leaves the app only if you tap Share or Copy yourself. Release builds don't copy it to the system log. The bundled speech library may still write technical warnings there (for example, about audio resampling), but never your words.
 - **No analytics, no ads, no accounts, no tracking.** The app contains no third-party SDKs of this kind.
 
 Questions: open an issue on GitHub.

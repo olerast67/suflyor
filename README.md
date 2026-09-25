@@ -26,7 +26,7 @@
 It is made for creators who hold the phone, read a couple of lines to the lens, look back at the text and carry on. If you stumble and start a sentence again, the text goes back with you. If you skip a paragraph, it catches up.
 
 > [!NOTE]
-> **Speech recognition is Russian-only for now**, and so is the interface. English and more languages are the next milestone ([roadmap](#roadmap)).
+> **Works in English and Russian.** The interface follows your phone's language, and Suflyor picks the speech language from your script's letters (or set it in Settings). More languages are on the [roadmap](#roadmap).
 
 ## Screenshots
 
@@ -41,7 +41,8 @@ It is made for creators who hold the phone, read a couple of lines to the lens, 
 ## Features
 
 **🎙️ Follows your voice**
-- On-device streaming speech recognition ([sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)). No cloud, no account, no delay from the network.
+- On-device streaming speech recognition for **English and Russian** ([sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)). No cloud, no account, no delay from the network.
+- Understands how people read English: contractions (don't, it's), numbers written as digits but said as words, abbreviations (Mr., Dr.), acronyms (AI, CEO) and "um"s.
 - Searches the whole script, not only the next few words. Rare words count more than common ones, so it doesn't jump on every "and".
 - Re-reading a line brings the text back to it after about two words. A skipped block is found after three or four.
 - Pauses and off-script talk leave the text where it is.
@@ -88,13 +89,15 @@ The details are in [PRIVACY.md](PRIVACY.md).
 
 ## Install
 
-**Requirements:** Android 10 or newer on a 64-bit ARM phone (almost every phone since 2017). Tested on a Samsung Galaxy S24 FE with One UI 6.1 (Android 14).
+**Requirements:** Android 10 or newer on a 64-bit ARM phone (almost every phone since 2017), about 130 MB of space: both speech models are inside the app. Tested on a Samsung Galaxy S24 FE with One UI 6.1 (Android 14).
 
 1. Download `Suflyor-<version>.apk` from [Releases](https://github.com/OWNER/suflyor/releases/latest) and open it. Allow your browser or file manager to install apps when asked.
 2. Open Suflyor and allow the **microphone**.
-3. Turn on the accessibility service **"Суфлёр: окно поверх и голос"**. The app takes you to the right screen.
-   - On Android 13 and newer, apps installed from a file can't use accessibility at first, and the switch is greyed out. Go to **Settings → Apps → Суфлёр → ⋮ → Allow restricted settings**, then turn the service on again.
-4. On a script, choose Instagram, TikTok or Camera under the **Поверх камеры** (over the camera) button, tap the button and start reading.
+3. Turn on the accessibility service **“Suflyor: floating window and voice”** (on a Russian phone: «Суфлёр: окно поверх и голос»). The app takes you to the right screen.
+   - On Android 13 and newer, apps installed from a file can't use accessibility at first, and the switch is greyed out. Go to **Settings → Apps → Suflyor → ⋮ → Allow restricted settings**, then turn the service on again.
+4. On a script, choose Instagram, TikTok or Camera under the **Over the camera** button, tap the button and start reading.
+
+**Language:** the app follows your phone's language; on Android 13 and newer you can pick English or Russian just for Suflyor in **Settings → App language**. The speech language is separate: Auto picks it for each script from its letters, or fix it in **Settings → Speech language** (Auto, Русский, English).
 
 **Updates:** new versions install over the old one. With [Obtainium](https://github.com/ImranR98/Obtainium) you get them automatically from this repository.
 
@@ -126,7 +129,7 @@ cd suflyor
 ./gradlew assembleDebug testDebugUnitTest
 ```
 
-- **Downloads on first build.** The speech library (sherpa-onnx 1.13.8, ~50 MB) and the Russian model (~28 MB) are not stored in git. The `fetchSpeechAssets` task downloads them from pinned revisions and checks every file against a pinned SHA-256.
+- **Downloads on first build.** The speech library (sherpa-onnx 1.13.8, ~50 MB), the Russian model (~28 MB) and the English model (~73 MB) are not stored in git. The `fetchSpeechAssets` task downloads them from pinned revisions and checks every file against a pinned SHA-256.
 - **Release builds** (`./gradlew assembleRelease`) are signed only when a key is configured, through `keystore.properties` or the `SUFLYOR_*` environment variables. Without a key they come out unsigned. See [RELEASING.md](RELEASING.md).
 - **On Windows,** `.\build.ps1` and `.\install.ps1` read `sdk.dir` and `jdk.dir` from `local.properties`.
 
@@ -148,7 +151,7 @@ cd suflyor
 
 ## Roadmap
 
-- **0.4: languages.** English speech recognition and interface, then downloadable language packs (Spanish, German, Italian, Polish, Vietnamese and others that have compact streaming models). Language packs will be files you open with the app, so it still needs no internet permission.
+- **Language packs:** Spanish, German, Italian, Polish, Vietnamese and other languages that have compact streaming models. They will be files you open with the app, so it still needs no internet permission and the APK doesn't grow.
 - Mirror mode for beam-splitter teleprompter glass.
 
 Ideas and votes are welcome in [Issues](https://github.com/OWNER/suflyor/issues).
@@ -163,16 +166,17 @@ Starring the repository and telling other creators about it helps too.
 
 ## Contributing
 
-Bug reports from different phones are the most valuable help. Attach the in-app journal: **Настройки → Журнал → Поделиться** (Settings → Journal → Share). See [CONTRIBUTING.md](CONTRIBUTING.md) for building, code style and adding a language. Report security problems privately, as described in [SECURITY.md](SECURITY.md).
+Bug reports from different phones are the most valuable help. Attach the in-app log: **Settings → Log → Share**. See [CONTRIBUTING.md](CONTRIBUTING.md) for building, code style and adding a language. Report security problems privately, as described in [SECURITY.md](SECURITY.md).
 
 ## Credits
 
 - [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) by the k2-fsa team: streaming speech recognition (Apache-2.0).
 - [vosk-model-small-streaming-ru](https://huggingface.co/alphacep/vosk-model-small-streaming-ru) by Alpha Cephei: the Russian model (Apache-2.0).
+- The [icefall](https://github.com/k2-fsa/icefall) streaming Zipformer trained on LibriSpeech: the English model (Apache-2.0).
 - [ONNX Runtime](https://github.com/microsoft/onnxruntime) (MIT), Jetpack Compose (Apache-2.0).
 - The full list is in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-**How this was made:** the author designed the app, directed it and tested it on a real phone. Much of the code was written with an AI coding assistant (Claude by Anthropic). The voice tracker and the importers are covered by unit tests in `app/src/test`.
+**How this was made:** the author designed the app, directed it and tested it on a real phone. Much of the code was written with an AI coding assistant (Claude by Anthropic). The voice tracker (in both languages) and the importers are covered by unit tests in `app/src/test`.
 
 ## License
 
