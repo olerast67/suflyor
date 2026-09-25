@@ -40,7 +40,7 @@
     <string name="import_clipboard_empty">В буфере нет текста</string>
 
     <string name="main_mic_blocked">Микрофон запрещён — включи его в разрешениях приложения</string>
-    <string name="main_open_app_failed">Не получилось открыть %1$s</string>
+    <string name="main_open_app_failed">Не получилось открыть приложение «%1$s»</string>
     <string name="main_no_words">В тексте нет слов</string>
 
     <string name="script_cd_edit">Редактировать</string>

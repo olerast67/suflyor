@@ -509,7 +509,7 @@ class OverlayController(private val context: Context, private val windowType: In
         pauseBtn.contentDescription = context.getString(if (s.paused) R.string.common_cd_resume else R.string.common_cd_pause)
         modeBtn.setImageResource(if (s.scroll == SessionEngine.Scroll.VOICE) R.drawable.ic_mic else R.drawable.ic_speed)
         val (color, label) = when {
-            s.starting -> Color.GRAY to R.string.overlay_status_starting
+            s.starting || s.loadingModel -> Color.GRAY to R.string.overlay_status_starting
             !s.listening -> Color.GRAY to R.string.overlay_status_stopped
             s.paused -> PrompterView.ACCENT to R.string.overlay_status_paused
             s.scroll == SessionEngine.Scroll.AUTO -> PrompterView.ACCENT to R.string.overlay_status_auto

@@ -110,11 +110,17 @@ class EnglishTrackerTest {
         )) {
             assertEquals("$a/$b", EnglishNorm.stem(b), EnglishNorm.stem(a))
         }
-        for ((a, b) in listOf("model" to "models", "run" to "running", "make" to "making", "it's" to "its", "don't" to "dont")) {
+        for ((a, b) in listOf(
+            "model" to "models", "run" to "running", "make" to "making", "it's" to "its", "don't" to "dont", "save" to "saved",
+            "hope" to "hoped", "study" to "studies",
+        )) {
             assertTrue("$a/$b", en.similarity(a, b) >= ScriptTracker.MATCH_SIM)
         }
         for ((a, b) in listOf(
             "the" to "then", "want" to "went", "internet" to "interview", "communication" to "community", "camera" to "drone",
+            // A bare final e or y is not an inflection.
+            "not" to "note", "her" to "here", "man" to "many", "every" to "ever", "made" to "mad", "part" to "party",
+            "plan" to "plane", "quit" to "quite", "sit" to "site",
         )) {
             assertTrue("$a/$b", en.similarity(a, b) < ScriptTracker.MATCH_SIM)
         }
@@ -307,9 +313,9 @@ class EnglishTrackerTest {
         hear(t, "OUR A I", history)
         assertTrue("ai: ${t.position}", t.position >= idx("ai", list = w))
         hear(t, "STARTUP HIRED A NEW C E O", history)
-        assertTrue("ceo: ${t.position}", t.position >= idx("ceo", list = w))
+        assertEquals("ceo", idx("ceo", list = w) + 1, t.position)
         hear(t, "IN THE U S A", history)
-        assertTrue("usa: ${t.position}", t.position >= idx("usa", list = w))
+        assertEquals("usa", idx("usa", list = w) + 1, t.position)
         hear(t, "AND NOW WE POST ON YOU TUBE", history)
         assertEquals(idx("youtube", list = w) + 1, t.position)
         hear(t, "AND TICK TOCK EVERY DAY", history)

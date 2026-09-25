@@ -207,11 +207,13 @@ class AsrBench : BroadcastReceiver() {
             } else if (tag(pos) == "data") {
                 dataStart = body
                 // Streamed recordings may leave the size at 0 or -1: take the rest of the file.
-                dataLen = if (len <= 0 || body + len > bytes.size) bytes.size - body else len
+                dataLen = if (len <= 0 || body.toLong() + len > bytes.size) bytes.size - body else len
                 break
             }
             if (len < 0) break
-            pos = body + len + (len and 1)
+            val next = body.toLong() + len + (len and 1)
+            if (next > bytes.size) break
+            pos = next.toInt()
         }
         require(format == 1 && bits == 16 && channels > 0 && rate > 0 && dataStart >= 0) {
             "${file.name}: need 16-bit PCM (format $format, $bits bits, $channels channels, $rate Hz)"

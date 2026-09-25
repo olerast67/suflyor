@@ -15,6 +15,7 @@ import com.olerast.suflyor.doc.Paragraph
 import com.olerast.suflyor.doc.ScriptDocument
 import com.olerast.suflyor.script.ScriptLayout
 import com.olerast.suflyor.script.ScriptModel
+import com.olerast.suflyor.script.SpeechLang
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -108,7 +109,8 @@ class ScriptRepository(context: Context, private val settings: Settings) {
 
     private fun write(id: String, doc: ScriptDocument, createdAt: Long) {
         // Counted with the speech language's rules: "don't" is one English word, not two.
-        val words = ScriptLayout.build(doc, phraseMode = false, lang = settings.speechLangFor(doc)).spokenTokens
+        val lang = settings.speechLangFor(doc)
+        val words = ScriptLayout.build(doc, phraseMode = false, lang = lang).spokenTokens
         val json = JSONObject().apply {
             put("id", id)
             put("title", doc.title)
@@ -116,6 +118,8 @@ class ScriptRepository(context: Context, private val settings: Settings) {
             put("createdAt", createdAt)
             put("updatedAt", System.currentTimeMillis())
             put("words", words)
+            put(KEY_WORDS_LANG, lang.code)
+            put(KEY_DETECTED_LANG, SpeechLang.detect(doc).code)
             put(KEY_WARNING_CODES, JSONArray(doc.warnings.map { it.code }))
             put("paragraphs", JSONArray().apply {
                 doc.paragraphs.forEach { p ->
@@ -162,10 +166,35 @@ class ScriptRepository(context: Context, private val settings: Settings) {
             runCatching {
                 val o = JSONObject(f.readText())
                 val format = formatCode(o.optString("format"))
-                Meta(f.nameWithoutExtension, o.optString("title"), format, o.optInt("words"), o.optLong("updatedAt"))
+                Meta(f.nameWithoutExtension, o.optString("title"), format, wordCount(f, o), o.optLong("updatedAt"))
             }.getOrNull()
         }
         .sortedByDescending { it.updatedAt }
+
+    /**
+     * The saved word count, recounted when it was made with another speech language than the one that applies now
+     * (files from 0.3 were always counted the Russian way). Only the count is rewritten, so the order stays.
+     */
+    private fun wordCount(f: File, o: JSONObject): Int {
+        val counted = SpeechLang.fromCode(o.optString(KEY_WORDS_LANG))
+        val fixed = SpeechLang.fromCode(settings.speechLang)
+        val detected = SpeechLang.fromCode(o.optString(KEY_DETECTED_LANG))
+        if (counted != null && counted == (fixed ?: detected)) return o.optInt("words")
+        val doc = parse(o)
+        val lang = settings.speechLangFor(doc)
+        val words = ScriptLayout.build(doc, phraseMode = false, lang = lang).spokenTokens
+        o.put("words", words)
+        o.put(KEY_WORDS_LANG, lang.code)
+        o.put(KEY_DETECTED_LANG, SpeechLang.detect(doc).code)
+        runCatching { f.writeText(o.toString()) }.onFailure { DiagLog.e("Couldn't update the word count", it) }
+        return words
+    }
+
+    /** After the speech language setting changes: the current layout and every library word count follow it. */
+    fun onSpeechLangChanged() {
+        relayout()
+        items = loadAllMeta()
+    }
 
     private fun migrateLegacy() {
         if (!legacyFile.exists()) return
@@ -186,6 +215,10 @@ class ScriptRepository(context: Context, private val settings: Settings) {
 
     companion object {
         private const val KEY_WARNING_CODES = "warningCodes"
+
+        /** Language whose rules made "words", and the language the script's letters point to. */
+        private const val KEY_WORDS_LANG = "wordsLang"
+        private const val KEY_DETECTED_LANG = "detectedLang"
 
         /** The sample of the single-script storage (script.json) had this title and is not carried over. Data, not UI text. */
         private const val LEGACY_SAMPLE_TITLE = "Пример"

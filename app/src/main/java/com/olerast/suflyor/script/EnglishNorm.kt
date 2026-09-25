@@ -85,6 +85,12 @@ object EnglishNorm {
      * the frequency weights and the similarity; not a lemmatizer.
      */
     fun stem(word: String): String {
+        val w = core(word)
+        return if (w.length > 3 && (w.last() == 'e' || w.last() == 'y')) w.dropLast(1) else w
+    }
+
+    /** [stem] without dropping a final e/y: plurals, -ing, -ed and -ly removed, but "note" stays "note". */
+    private fun core(word: String): String {
         var w = word.replace("'", "")
         w = when {
             w.length > 4 && w.endsWith("ies") -> w.dropLast(3) + "y"
@@ -101,8 +107,13 @@ object EnglishNorm {
             }
         }
         if (w.length > 5 && w.endsWith("ly")) w = w.dropLast(2)
-        if (w.length > 3 && (w.last() == 'e' || w.last() == 'y')) w = w.dropLast(1)
         return w
+    }
+
+    /** The word lost an -ing or -ed ending in [core]: "making" and "saved" may then match "make" and "save". */
+    private fun lostIngEd(word: String): Boolean {
+        val plain = word.replace("'", "")
+        return (plain.endsWith("ing") || plain.endsWith("ed")) && core(word).length <= plain.length - 2
     }
 
     /**
@@ -115,8 +126,14 @@ object EnglishNorm {
         val minLen = minOf(a.length, b.length)
         val maxLen = maxOf(a.length, b.length)
         if (maxLen <= 2) return 0f
-        // model/models, run/running, it's/its, don't/dont. A stem keeps the first letter: other pairs skip the work.
-        if (minLen >= 3 && a[0] == b[0] && stem(a) == stem(b)) return 0.9f
+        // model/models, run/running, it's/its, don't/dont, make/making. A stem keeps the first letter: other pairs skip
+        // the work. A bare final e/y is no inflection: note/not, many/man, here/her are different words.
+        if (minLen >= 3 && a[0] == b[0] && stem(a) == stem(b) && (core(a) == core(b) || lostIngEd(a) || lostIngEd(b))) {
+            return 0.9f
+        }
+        // One extra final e/y is a different word, not a typo: every/ever, plane/plan, quite/quit, party/part.
+        val (short, long) = if (a.length < b.length) a to b else b to a
+        if (long.length - short.length == 1 && long.startsWith(short) && long.last() in "ey") return 0f
         if (maxLen <= 4) return 0f
         var p = 0
         while (p < minLen && a[p] == b[p]) p++

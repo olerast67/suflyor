@@ -2,7 +2,10 @@ package com.olerast.suflyor.ui
 
 import android.app.StatusBarManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
+import android.content.res.Resources
 import android.graphics.drawable.Icon
 import android.media.MediaRecorder
 import android.net.Uri
@@ -107,7 +110,7 @@ fun SettingsScreen(
             )
             if (!readiness.a11yRunning) {
                 Text(
-                    stringResource(R.string.settings_a11y_restricted, stringResource(R.string.app_name)),
+                    stringResource(R.string.settings_a11y_restricted, systemLanguageAppName(context)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Palette.TextMuted,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
@@ -154,8 +157,8 @@ fun SettingsScreen(
                         if (speechLang != value) {
                             speechLang = value
                             s.speechLang = value
-                            // Word matching depends on the language, so the current script is laid out again.
-                            app.scripts.relayout()
+                            // Word matching and counting depend on the language: re-layout, recount the library.
+                            app.scripts.onSpeechLangChanged()
                         }
                     }
                 }
@@ -440,4 +443,14 @@ private fun ReadyRow(ok: Boolean, title: String, subtitle: String, action: Strin
             )
         }
     }
+}
+
+/**
+ * The app's name as Android's own Settings list it: in the system language, which may differ from the language
+ * picked for this app (Android 13+ per-app language).
+ */
+private fun systemLanguageAppName(context: Context): String {
+    val config = Configuration(context.resources.configuration)
+    config.setLocales(Resources.getSystem().configuration.locales)
+    return context.createConfigurationContext(config).getString(R.string.app_name)
 }

@@ -17,6 +17,7 @@ import com.olerast.suflyor.App
 import com.olerast.suflyor.R
 import com.olerast.suflyor.diag.DiagLog
 import com.olerast.suflyor.session.SessionEngine
+import com.olerast.suflyor.session.SessionError
 import com.olerast.suflyor.session.SessionService
 
 /** Why a session over other apps could not start; [message] tells the user what to do. */
@@ -55,7 +56,13 @@ object OverlayHost {
         if (!watching) {
             watching = true
             app.engine.addListener { s ->
-                if (active && s.mode == SessionEngine.Mode.IDLE && !s.starting) endSession(appContext)
+                if (active && s.mode == SessionEngine.Mode.IDLE && !s.starting) {
+                    // The microphone failed to start: say so, or the window would just vanish.
+                    (s.error as? SessionError.Capture)?.let {
+                        Toast.makeText(appContext, it.message(appContext), Toast.LENGTH_LONG).show()
+                    }
+                    endSession(appContext)
+                }
             }
         }
         // Start the engine first: stopping a running rehearsal publishes IDLE, which must not end this new session.

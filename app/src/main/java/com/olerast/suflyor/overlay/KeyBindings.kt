@@ -79,6 +79,9 @@ object KeyBindings {
         KeyEvent.KEYCODE_MEDIA_NEXT -> context.getString(R.string.key_name_next_track)
         KeyEvent.KEYCODE_MEDIA_PREVIOUS -> context.getString(R.string.key_name_previous_track)
         KeyEvent.KEYCODE_HEADSETHOOK -> context.getString(R.string.key_name_headset)
+        KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> context.getString(R.string.key_name_fast_forward)
+        KeyEvent.KEYCODE_MEDIA_REWIND -> context.getString(R.string.key_name_rewind)
+        KeyEvent.KEYCODE_BUTTON_A -> context.getString(R.string.key_name_gamepad_a)
         else -> KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
     }
 }

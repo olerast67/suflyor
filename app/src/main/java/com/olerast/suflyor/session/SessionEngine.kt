@@ -65,6 +65,8 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
         val error: SessionError? = null,
         /** Seconds left in the 3-2-1 before timed scrolling starts; 0 when there is none. */
         val countdown: Int = 0,
+        /** The session runs but the recognizer for a new script language is still loading: nothing is heard yet. */
+        val loadingModel: Boolean = false,
     )
 
     private val main = Handler(Looper.getMainLooper())
@@ -155,18 +157,33 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
             }
         }
         val old = stale
-        if (old != null) swapRecognizer(old) else asr?.setBiasWords(m.biasWords())
+        // Also load when a running session has no recognizer at all (an earlier load failed).
+        if (old != null || (asr == null && state.mode != Mode.IDLE && !state.starting)) {
+            swapRecognizer(old)
+        } else {
+            asr?.setBiasWords(m.biasWords())
+        }
         update { copy(nextToken = tracker.nextTokenIndex(), position = 0, total = tracker.size, partial = "", lastFinal = "") }
     }
 
     /** Frees the model of the old language first (they are large), then loads the new one if a session needs it. */
-    private fun swapRecognizer(old: AsrEngine) {
+    private fun swapRecognizer(old: AsrEngine?) {
+        val running = state.mode != Mode.IDLE
+        if (running) update { copy(loadingModel = true) }
         Thread({
-            old.release()
-            DiagLog.i("Recognizer released: ${old.lang.code}")
+            if (old != null) {
+                old.release()
+                DiagLog.i("Recognizer released: ${old.lang.code}")
+            }
             if (state.mode != Mode.IDLE) {
                 val error = ensureAsr()
-                if (error != null) update { copy(error = error) }
+                update {
+                    // A successful load clears an earlier load failure; a new failure replaces it.
+                    val kept = if (this.error is SessionError.AsrLoadFailed) null else this.error
+                    copy(loadingModel = false, error = error ?: kept)
+                }
+            } else if (running) {
+                update { copy(loadingModel = false) }
             }
         }, "asr-swap").start()
     }
@@ -259,7 +276,7 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
 
     private fun loadAsrLocked(): SessionError? {
         while (true) {
-            val (want, bias) = synchronized(lock) { model.lang to model }
+            val want = synchronized(lock) { model.lang }
             asr?.let { current ->
                 if (current.lang == want) return null
                 synchronized(lock) { if (asr === current) asr = null }
@@ -268,9 +285,14 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
             try {
                 val t0 = SystemClock.elapsedRealtime()
                 val engine = SherpaAsr.create(app, want)
-                engine.setBiasWords(bias.biasWords())
+                // Hints come from the script that is current now: another script may have been opened during the load.
                 val installed = synchronized(lock) {
-                    (model.lang == want).also { if (it) asr = engine }
+                    (model.lang == want).also {
+                        if (it) {
+                            engine.setBiasWords(model.biasWords())
+                            asr = engine
+                        }
+                    }
                 }
                 if (!installed) {
                     engine.release()
@@ -323,7 +345,7 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
             copy(
                 mode = Mode.IDLE, starting = false, listening = false, partial = "", levelDb = -120f,
                 silencedBySystem = null, digitalSilence = false, autoFallback = false, recordings = emptyList(),
-                countdown = 0,
+                countdown = 0, loadingModel = false,
             )
         }
         countdownEndsAt = 0L

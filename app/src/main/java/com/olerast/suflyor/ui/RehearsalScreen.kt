@@ -20,6 +20,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +55,15 @@ fun RehearsalScreen(onBack: () -> Unit) {
             Spacer(Modifier.width(8.dp))
             Text(label, style = MaterialTheme.typography.labelMedium, color = Palette.TextSecondary, modifier = Modifier.weight(1f))
             LevelMeter(state.levelDb, state.silencedBySystem == true || state.digitalSilence, Modifier.width(64.dp))
+        }
+        // A failed microphone or recognizer would otherwise look like plain silence.
+        state.error?.let { error ->
+            Text(
+                error.message(LocalContext.current),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Palette.Danger,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+            )
         }
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Prompter(
@@ -105,7 +115,7 @@ fun RehearsalScreen(onBack: () -> Unit) {
 
 @Composable
 fun statusOf(s: SessionEngine.State): Pair<Color, String> = when {
-    s.starting -> Palette.TextMuted to stringResource(R.string.rehearsal_status_starting)
+    s.starting || s.loadingModel -> Palette.TextMuted to stringResource(R.string.rehearsal_status_starting)
     !s.listening -> Palette.TextMuted to stringResource(R.string.rehearsal_status_idle)
     s.paused -> Palette.Accent to stringResource(R.string.rehearsal_status_paused)
     s.scroll == SessionEngine.Scroll.AUTO ->

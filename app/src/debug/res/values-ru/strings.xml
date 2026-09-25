@@ -3,4 +3,5 @@
 <resources>
     <string name="app_name">Суфлёр dev</string>
     <string name="a11y_label">Суфлёр dev: окно поверх и голос</string>
+    <string name="tile_label">Суфлёр dev</string>
 </resources>

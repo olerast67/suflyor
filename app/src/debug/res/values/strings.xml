@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">Suflyor dev</string>
     <string name="a11y_label">Suflyor dev: floating window and voice</string>
+    <string name="tile_label">Suflyor dev</string>
 </resources>

@@ -39,4 +39,7 @@
     <string name="key_name_next_track">Следующий трек</string>
     <string name="key_name_previous_track">Предыдущий трек</string>
     <string name="key_name_headset">Кнопка гарнитуры</string>
+    <string name="key_name_fast_forward">Перемотка вперёд</string>
+    <string name="key_name_rewind">Перемотка назад</string>
+    <string name="key_name_gamepad_a">Кнопка A геймпада</string>
 </resources>

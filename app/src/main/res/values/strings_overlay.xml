@@ -46,4 +46,7 @@
     <string name="key_name_next_track">Next track</string>
     <string name="key_name_previous_track">Previous track</string>
     <string name="key_name_headset">Headset button</string>
+    <string name="key_name_fast_forward">Fast forward</string>
+    <string name="key_name_rewind">Rewind</string>
+    <string name="key_name_gamepad_a">Gamepad A</string>
 </resources>
