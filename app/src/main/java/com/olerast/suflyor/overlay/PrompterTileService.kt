@@ -79,7 +79,7 @@ class QuickStartActivity : ComponentActivity() {
     private fun start() {
         val problem = OverlayHost.startSession(this)
         if (problem != null) {
-            Toast.makeText(this, problem, Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(problem.message), Toast.LENGTH_LONG).show()
             startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
         finishQuietly()

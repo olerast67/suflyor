@@ -29,8 +29,8 @@ android {
         applicationId = "com.olerast.suflyor"
         minSdk = 29
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3"
+        versionCode = 4
+        versionName = "0.4"
         ndk {
             abiFilters += "arm64-v8a"
         }
@@ -77,6 +77,8 @@ android {
     androidResources {
         // The speech model is read straight from assets; keep it uncompressed so loading is fast.
         noCompress += listOf("onnx")
+        // Only the app's own languages: library strings (Compose, Material) otherwise show up in a third language.
+        localeFilters += listOf("en", "ru")
     }
 
     packaging {
@@ -113,12 +115,15 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 }
 
-// ---- Speech engine and Russian model --------------------------------------------------------------------------
-// Not stored in git (80 MB of binaries): downloaded once from their official sources, pinned to exact revisions and
+// ---- Speech engine, Russian and English models ----------------------------------------------------------------
+// Not stored in git (about 155 MB of binaries): downloaded once from their official sources, pinned to exact revisions and
 // checked by SHA-256. Licenses: see THIRD_PARTY_NOTICES.md.
 
 private val modelBase =
     "https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-small-ru-vosk-int8-2025-08-16/resolve/31fa603e4f31279c6e1f7600fed13dc4312663ab"
+
+private val enModelBase =
+    "https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-en-2023-06-26/resolve/672fbf1b30579d6585301139bb363f42a0ad4a24"
 
 private val speechAssets = listOf(
     Triple(
@@ -135,6 +140,17 @@ private val speechAssets = listOf(
         "src/main/assets/asr-ru/bpe.vocab",
         "https://huggingface.co/alphacep/vosk-model-small-streaming-ru/resolve/e18123ee13f694036a1eea82eb43f9895387cb59/lang/unigram_500.vocab",
         "b159479dd209823a82698ea4092b2627272d96fbe616b91409ed02bc6cfb8df4",
+    ),
+    // English: streaming Zipformer trained on LibriSpeech (icefall 2023-05-17, 320 ms chunks), int8 encoder and joiner.
+    Triple("src/main/assets/asr-en/encoder.int8.onnx", "$enModelBase/encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx", "563fde436d16cf7607cf408cd6b30909819d03162652ef389c2450ced3f45ac1"),
+    Triple("src/main/assets/asr-en/decoder.onnx", "$enModelBase/decoder-epoch-99-avg-1-chunk-16-left-128.onnx", "7bf787f90b194b307e5a4ad6a34fadb4e748304c35f78a8d66358a05b13ee6ef"),
+    Triple("src/main/assets/asr-en/joiner.int8.onnx", "$enModelBase/joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx", "d944208d660d67c8d72cd2acaeac971fa5ceb8c80e76c1968148846fedd6e297"),
+    Triple("src/main/assets/asr-en/tokens.txt", "$enModelBase/tokens.txt", "49e3c2646595fd907228b3c6787069658f67b17377c60aeb8619c4551b2316fb"),
+    // The same LibriSpeech BPE-500 vocabulary (its model file equals the one in the repo above), for script-word hints.
+    Triple(
+        "src/main/assets/asr-en/bpe.vocab",
+        "https://huggingface.co/csukuangfj/icefall-asr-librispeech-conformer-ctc-jit-bpe-500-2021-11-09/resolve/66448a2164b7a67cc4d2118a2f1b2709d9fde148/data/lang_bpe_500/unigram_500.vocab",
+        "28c02989b3cd8c2ffa974b1e33f97ec6cded170bda622ca627b7330b41c6c827",
     ),
 )
 
@@ -171,7 +187,7 @@ private fun download(url: String, to: File) {
 
 val fetchSpeechAssets by tasks.registering {
     group = "build setup"
-    description = "Downloads the speech recognition library and the Russian model (not stored in git)."
+    description = "Downloads the speech recognition library and the speech models (not stored in git)."
     val dir = layout.projectDirectory.asFile
     doLast {
         for ((path, url, sha) in speechAssets) {

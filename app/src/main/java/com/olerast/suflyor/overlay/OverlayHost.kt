@@ -12,10 +12,18 @@ import android.view.KeyEvent
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.widget.Toast
+import androidx.annotation.StringRes
 import com.olerast.suflyor.App
+import com.olerast.suflyor.R
 import com.olerast.suflyor.diag.DiagLog
 import com.olerast.suflyor.session.SessionEngine
 import com.olerast.suflyor.session.SessionService
+
+/** Why a session over other apps could not start; [message] tells the user what to do. */
+enum class StartProblem(@StringRes val message: Int) {
+    NO_HOST(R.string.start_problem_no_host),
+    WINDOW_FAILED(R.string.start_problem_window_failed),
+}
 
 /** Starts and stops the "over other apps" session: foreground service + engine + floating window. */
 object OverlayHost {
@@ -29,11 +37,11 @@ object OverlayHost {
     private var screenOffReceiver: BroadcastReceiver? = null
 
     /** @return null on success, otherwise what the user has to do first. */
-    fun startSession(context: Context): String? {
+    fun startSession(context: Context): StartProblem? {
         val a11y = PrompterAccessibilityService.instance
         val canDraw = Settings.canDrawOverlays(context)
         if (a11y == null && !canDraw) {
-            return "Включи службу спецвозможностей «Суфлёр» или разреши показ поверх других окон"
+            return StartProblem.NO_HOST
         }
         val app = App.instance
         val appContext = context.applicationContext
@@ -56,7 +64,7 @@ object OverlayHost {
         // The window first: if it can't be shown, nothing else (foreground service, key filtering) is started.
         if (!showWindow(context)) {
             stopSession(context)
-            return "Не удалось показать окно суфлёра. Проверь службу спецвозможностей «Суфлёр»."
+            return StartProblem.WINDOW_FAILED
         }
         context.startForegroundService(Intent(context, SessionService::class.java))
         watchScreen(appContext)

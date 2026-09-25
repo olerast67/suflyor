@@ -19,8 +19,11 @@ object DiagLog {
 
     fun i(message: String) = add(message)
 
+    /** Journal lines are English in every UI language: they go into bug reports. Errors start with this. */
+    const val ERROR_PREFIX = "ERROR: "
+
     fun e(message: String, t: Throwable? = null) =
-        add("ОШИБКА: $message" + (t?.let { " — ${it.javaClass.simpleName}: ${it.message}" } ?: ""))
+        add(ERROR_PREFIX + message + (t?.let { " — ${it.javaClass.simpleName}: ${it.message}" } ?: ""))
 
     @Synchronized
     private fun add(message: String) {

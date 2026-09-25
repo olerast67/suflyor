@@ -75,7 +75,7 @@ fun JournalScreen(onBack: () -> Unit) {
                     fontFamily = FontFamily.Monospace,
                     fontSize = 11.sp,
                     lineHeight = 15.sp,
-                    color = if (line.contains("ОШИБКА")) Palette.Danger else Palette.TextSecondary,
+                    color = if (line.contains(DiagLog.ERROR_PREFIX)) Palette.Danger else Palette.TextSecondary,
                     modifier = Modifier.padding(vertical = 2.dp),
                 )
             }

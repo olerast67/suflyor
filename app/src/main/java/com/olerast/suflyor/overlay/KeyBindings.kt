@@ -1,12 +1,14 @@
 package com.olerast.suflyor.overlay
 
 import android.view.KeyEvent
+import androidx.annotation.StringRes
+import com.olerast.suflyor.R
 import com.olerast.suflyor.session.SessionEngine
 
-enum class KeyAction(val label: String) {
-    PAUSE("Пауза и продолжение"),
-    BACK("Строка назад"),
-    FORWARD("Строка вперёд");
+enum class KeyAction(@StringRes val label: Int) {
+    PAUSE(R.string.key_action_pause),
+    BACK(R.string.key_action_back),
+    FORWARD(R.string.key_action_forward);
 
     fun perform(engine: SessionEngine) = when (this) {
         PAUSE -> engine.togglePause()

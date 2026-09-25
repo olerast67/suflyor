@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_cd_back">Назад</string>
+    <string name="common_cd_restart">В начало</string>
+    <string name="common_cd_line_back">Строка назад</string>
+    <string name="common_cd_line_forward">Строка вперёд</string>
+    <string name="common_cd_pause">Пауза</string>
+    <string name="common_cd_resume">Продолжить</string>
+    <string name="common_cd_scroll_mode">Голос или скорость</string>
+    <string name="common_cancel">Отмена</string>
+    <string name="common_delete">Удалить</string>
+    <string name="common_untitled">Без названия</string>
+
+    <plurals name="words_count">
+        <item quantity="one">%d слово</item>
+        <item quantity="few">%d слова</item>
+        <item quantity="many">%d слов</item>
+        <item quantity="other">%d слова</item>
+    </plurals>
+
+    <string name="format_typed">текст</string>
+    <string name="format_sample">встроенный</string>
+
+    <string name="key_action_pause">Пауза и продолжение</string>
+    <string name="key_action_back">Строка назад</string>
+    <string name="key_action_forward">Строка вперёд</string>
+
+    <string name="camera_target_camera">Камера</string>
+    <string name="camera_target_window_only">Только окно</string>
+
+    <string name="start_problem_no_host">Включи службу спецвозможностей «Суфлёр» или разреши показ поверх других окон</string>
+    <string name="start_problem_window_failed">Не удалось показать окно суфлёра. Проверь службу спецвозможностей «Суфлёр».</string>
+
+    <string name="speech_lang_auto">Авто</string>
+</resources>

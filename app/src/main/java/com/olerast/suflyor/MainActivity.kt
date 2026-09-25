@@ -269,12 +269,12 @@ class MainActivity : ComponentActivity() {
         if (app.engine.state.mode == SessionEngine.Mode.IN_APP) app.engine.stop()
         val problem = OverlayHost.startSession(this)
         if (problem != null) {
-            toast(problem)
+            toast(getString(problem.message))
             push(Screen.Settings)
             return
         }
         val launch = target.launchIntent(this) ?: return
-        runCatching { startActivity(launch) }.onFailure { toast("Не получилось открыть ${target.label}") }
+        runCatching { startActivity(launch) }.onFailure { toast("Не получилось открыть ${getString(target.label)}") }
     }
 
     private fun saveEditor(id: String?, old: ScriptDocument?, title: String, text: String) {

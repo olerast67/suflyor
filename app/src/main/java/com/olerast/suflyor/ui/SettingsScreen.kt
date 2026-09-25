@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -194,7 +195,7 @@ fun SettingsScreen(
                 val keys = bindings.filterValues { it == action }.keys.map { KeyBindings.keyName(it) }
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(action.label, style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(action.label), style = MaterialTheme.typography.bodyLarge)
                         Text(
                             if (KeyLearning.action == action) "Нажми кнопку на пульте…" else keys.joinToString(", ").ifEmpty { "не назначено" },
                             style = MaterialTheme.typography.bodyMedium,

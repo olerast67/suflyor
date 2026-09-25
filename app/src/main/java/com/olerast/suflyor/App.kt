@@ -8,6 +8,8 @@ import android.media.MediaRecorder
 import com.olerast.suflyor.data.ScriptRepository
 import com.olerast.suflyor.diag.DiagLog
 import com.olerast.suflyor.doc.PdfTextExtractor
+import com.olerast.suflyor.doc.ScriptDocument
+import com.olerast.suflyor.script.SpeechLang
 import com.olerast.suflyor.session.SessionEngine
 
 class App : Application() {
@@ -25,7 +27,7 @@ class App : Application() {
         engine = SessionEngine(this)
         scripts = ScriptRepository(this, settings)
         offerPdfImport()
-        DiagLog.i("Приложение запущено, Android ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT}), ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}")
+        DiagLog.i("App started, Android ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT}), ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}")
     }
 
     /** Lists the app as a PDF handler only on devices that can read PDF text (see the .PdfImport alias). */
@@ -40,7 +42,7 @@ class App : Application() {
             if (packageManager.getComponentEnabledSetting(alias) != want) {
                 packageManager.setComponentEnabledSetting(alias, want, PackageManager.DONT_KILL_APP)
             }
-        }.onFailure { DiagLog.e("Не удалось настроить открытие PDF", it) }
+        }.onFailure { DiagLog.e("Couldn't set up PDF import", it) }
     }
 
     companion object {
@@ -126,6 +128,13 @@ class Settings(context: Context) {
             cachedBindings = v
             prefs.edit().putString("keyBindings", com.olerast.suflyor.overlay.KeyBindings.format(v)).apply()
         }
+
+    /** Language the reader speaks: "auto" (from the script's alphabet), or a [SpeechLang] code. */
+    var speechLang: String
+        get() = prefs.getString("speechLang", "auto") ?: "auto"
+        set(v) = prefs.edit().putString("speechLang", v).apply()
+
+    fun speechLangFor(doc: ScriptDocument): SpeechLang = SpeechLang.fromCode(speechLang) ?: SpeechLang.detect(doc)
 
     /** The microphone permission was requested at least once (tells "never asked" from "denied for good"). */
     var micAsked: Boolean

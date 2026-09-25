@@ -10,6 +10,12 @@ data class ScriptDocument(
     val warnings: List<String> = emptyList(),
 ) {
     val isEmpty: Boolean get() = paragraphs.all { it.text.isBlank() }
+
+    companion object {
+        /** [format] codes of scripts that don't come from a file; shown translated (ui/Messages.kt). */
+        const val FORMAT_TEXT = "TEXT"
+        const val FORMAT_SAMPLE = "SAMPLE"
+    }
 }
 
 data class Paragraph(

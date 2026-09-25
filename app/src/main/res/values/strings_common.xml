@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Strings shared by several screens and the floating window. -->
+<resources>
+    <string name="common_cd_back">Back</string>
+    <string name="common_cd_restart">Back to start</string>
+    <string name="common_cd_line_back">Previous line</string>
+    <string name="common_cd_line_forward">Next line</string>
+    <string name="common_cd_pause">Pause</string>
+    <string name="common_cd_resume">Resume</string>
+    <string name="common_cd_scroll_mode">Voice or auto-scroll</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_untitled">Untitled</string>
+
+    <plurals name="words_count">
+        <item quantity="one">%d word</item>
+        <item quantity="other">%d words</item>
+    </plurals>
+
+    <!-- Script formats saved as codes (TEXT, SAMPLE); file formats (DOCX, PDF, …) are shown as they are. -->
+    <string name="format_typed">text</string>
+    <string name="format_sample">built-in</string>
+
+    <string name="key_action_pause">Pause / resume</string>
+    <string name="key_action_back">Previous line</string>
+    <string name="key_action_forward">Next line</string>
+
+    <string name="camera_target_instagram" translatable="false">Instagram</string>
+    <string name="camera_target_tiktok" translatable="false">TikTok</string>
+    <string name="camera_target_camera">Camera</string>
+    <string name="camera_target_window_only">Window only</string>
+
+    <string name="start_problem_no_host">Turn on the Suflyor accessibility service or allow display over other apps</string>
+    <string name="start_problem_window_failed">Couldn\'t show the Suflyor window. Check the Suflyor accessibility service.</string>
+
+    <!-- Speech language: which recognizer listens. Language names are written in their own language. -->
+    <string name="speech_lang_auto">Auto</string>
+    <string name="speech_lang_ru" translatable="false">Русский</string>
+    <string name="speech_lang_en" translatable="false">English</string>
+</resources>

@@ -19,7 +19,14 @@ New-Item -ItemType Directory -Force $out | Out-Null
 $tmp = Join-Path ([IO.Path]::GetTempPath()) 'suflyor-shots'
 New-Item -ItemType Directory -Force $tmp | Out-Null
 
-function Adb { & $adb @args; if ($LASTEXITCODE -ne 0) { throw "adb $args failed" } }
+# adb writes progress ("1 file pulled") to stderr; Windows PowerShell 5.1 would turn that into a terminating error
+# under ErrorActionPreference=Stop, so stderr is collected here and only the exit code decides.
+function Adb {
+    $ErrorActionPreference = 'Continue'
+    $out = & $adb @args 2>&1 | ForEach-Object { "$_" }
+    if ($LASTEXITCODE -ne 0) { throw "adb $args failed: $out" }
+    $out
+}
 
 # Status and navigation bar bands, from the window manager's insets (fallback: 3% of the height each).
 function Get-Bars {

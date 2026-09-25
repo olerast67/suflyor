@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -111,7 +112,7 @@ fun ScriptScreen(
             ActionButton("Поверх камеры", R.drawable.ic_layers, primary = true) { onStartOverlay(target) }
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 targets.forEach { t ->
-                    Pill(t.label, t == target) {
+                    Pill(stringResource(t.label), t == target) {
                         target = t
                         app.settings.overlayTarget = t.name
                     }

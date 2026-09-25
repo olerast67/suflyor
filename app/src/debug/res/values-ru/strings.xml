@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Without this file the main values-ru would win over debug/values on Russian phones. -->
+<resources>
+    <string name="app_name">Суфлёр dev</string>
+    <string name="a11y_label">Суфлёр dev: окно поверх и голос</string>
+</resources>

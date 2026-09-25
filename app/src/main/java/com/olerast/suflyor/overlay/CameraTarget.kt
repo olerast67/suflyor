@@ -3,13 +3,15 @@ package com.olerast.suflyor.overlay
 import android.content.Context
 import android.content.Intent
 import android.provider.MediaStore
+import androidx.annotation.StringRes
+import com.olerast.suflyor.R
 
-/** App that "Поверх камеры" opens right after the floating prompter appears. */
-enum class CameraTarget(val label: String) {
-    INSTAGRAM("Instagram"),
-    TIKTOK("TikTok"),
-    CAMERA("Камера"),
-    NONE("Только окно");
+/** App that "Over the camera" opens right after the floating prompter appears. */
+enum class CameraTarget(@StringRes val label: Int) {
+    INSTAGRAM(R.string.camera_target_instagram),
+    TIKTOK(R.string.camera_target_tiktok),
+    CAMERA(R.string.camera_target_camera),
+    NONE(R.string.camera_target_window_only);
 
     fun launchIntent(context: Context): Intent? {
         val pm = context.packageManager
