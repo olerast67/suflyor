@@ -1,27 +1,29 @@
 <p align="center">
-  <img src="docs/images/banner.png" alt="Суфлёр — телесуфлёр, который слышит" width="100%">
+  <img src="docs/images/banner.png" alt="Суфлёр — телесуфлёр для Android, который слышит голос" width="100%">
 </p>
 
+<h1 align="center">Суфлёр — телесуфлёр для Android, который слышит голос</h1>
+
 <p align="center">
-  <a href="https://github.com/olerast67/suflyor/releases/latest"><img alt="Последняя версия" src="https://img.shields.io/github/v/release/olerast67/suflyor?style=flat-square&color=FFB020&label=версия"></a>
-  <a href="https://github.com/olerast67/suflyor/releases"><img alt="Скачивания" src="https://img.shields.io/github/downloads/olerast67/suflyor/total?style=flat-square&color=46D778&label=скачивания"></a>
-  <a href="https://github.com/olerast67/suflyor/actions/workflows/ci.yml"><img alt="Сборка" src="https://img.shields.io/github/actions/workflow/status/olerast67/suflyor/ci.yml?branch=main&style=flat-square&label=сборка"></a>
+  <a href="https://github.com/olerast67/voice-teleprompter-android/releases/latest"><img alt="Последняя версия" src="https://img.shields.io/github/v/release/olerast67/voice-teleprompter-android?style=flat-square&color=FFB020&label=версия"></a>
+  <a href="https://github.com/olerast67/voice-teleprompter-android/releases"><img alt="Скачивания" src="https://img.shields.io/github/downloads/olerast67/voice-teleprompter-android/total?style=flat-square&color=46D778&label=скачивания"></a>
+  <a href="https://github.com/olerast67/voice-teleprompter-android/actions/workflows/ci.yml"><img alt="Сборка" src="https://img.shields.io/github/actions/workflow/status/olerast67/voice-teleprompter-android/ci.yml?branch=main&style=flat-square&label=сборка"></a>
   <a href="LICENSE"><img alt="Лицензия GPL-3.0" src="https://img.shields.io/badge/лицензия-GPL--3.0-blue?style=flat-square"></a>
   <img alt="Android 10+" src="https://img.shields.io/badge/Android-10%2B-3DDC84?style=flat-square&logo=android&logoColor=white">
   <a href="PRIVACY.md"><img alt="Без интернета" src="https://img.shields.io/badge/сеть-нет-9F7AEA?style=flat-square"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/olerast67/suflyor/releases/latest"><img alt="Скачать APK" src="https://img.shields.io/badge/Скачать%20APK-GitHub%20Releases-FFB020?style=for-the-badge&logo=github&logoColor=black" height="42"></a>
+  <a href="https://github.com/olerast67/voice-teleprompter-android/releases/latest"><img alt="Скачать APK" src="https://img.shields.io/badge/Скачать%20APK-GitHub%20Releases-FFB020?style=for-the-badge&logo=github&logoColor=black" height="42"></a>
   &nbsp;
-  <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/olerast67/suflyor"><img alt="Get it on Obtainium" src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="42"></a>
+  <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/olerast67/voice-teleprompter-android"><img alt="Get it on Obtainium" src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="42"></a>
 </p>
 
-<p align="center"><a href="README.md">English</a> · <b>Русский</b></p>
+<p align="center"><a href="README.md">English</a> · <b>Русский</b> · <a href="https://olerast67.github.io/voice-teleprompter-android/ru/">🌐 Сайт</a></p>
 
 ---
 
-**Суфлёр** — бесплатный телесуфлёр для Android с открытым кодом, который **слышит тебя**. Он висит поверх Instagram, TikTok или камеры и прокручивает сценарий, пока ты говоришь, так что бежать за текстом не нужно. Работает полностью офлайн: разрешения на интернет у приложения нет вообще.
+**Суфлёр** — бесплатный **телесуфлёр для Android с управлением голосом** и открытым кодом: он **слышит тебя**. Он висит поверх Instagram, TikTok или камеры и прокручивает сценарий, пока ты говоришь, так что бежать за текстом не нужно. Работает полностью офлайн: разрешения на интернет у приложения нет вообще.
 
 Он сделан для тех, кто держит телефон в руке, читает пару строк в объектив, смотрит в текст и продолжает. Если собьёшься и начнёшь фразу заново, текст вернётся за тобой. Если пропустишь абзац, он догонит.
 
@@ -87,7 +89,7 @@ flowchart LR
 
 **Что нужно:** Android 10 или новее, 64-битный ARM-телефон (почти любой после 2017 года), около 130 МБ места: обе модели речи внутри приложения. Проверено на Samsung Galaxy S24 FE с One UI 6.1 (Android 14).
 
-1. Скачай `Suflyor-<версия>.apk` в [Releases](https://github.com/olerast67/suflyor/releases/latest) и открой его. Разреши браузеру или файловому менеджеру устанавливать приложения.
+1. Скачай `Suflyor-<версия>.apk` в [Releases](https://github.com/olerast67/voice-teleprompter-android/releases/latest) и открой его. Разреши браузеру или файловому менеджеру устанавливать приложения.
 2. Открой Суфлёр и разреши **микрофон**.
 3. Включи службу специальных возможностей **«Суфлёр: окно поверх и голос»**, приложение само откроет нужный экран.
    - На Android 13 и новее переключатель у приложений, установленных из файла, сначала серый. Открой **Настройки → Приложения → Суфлёр → ⋮ → Разрешить ограниченные настройки** и включи службу ещё раз.
@@ -121,7 +123,7 @@ Google вводит [проверку разработчиков](https://develo
 # Сертификат должен совпасть с SHA-256 выше:
 apksigner verify --print-certs Suflyor-*.apk
 # Подтверждает, что APK собран workflow этого репозитория:
-gh attestation verify Suflyor-*.apk --repo olerast67/suflyor
+gh attestation verify Suflyor-*.apk --owner olerast67
 ```
 
 Проверить сертификат прямо на телефоне можно приложением [AppVerifier](https://github.com/soupslurpr/AppVerifier).
@@ -131,7 +133,7 @@ gh attestation verify Suflyor-*.apk --repo olerast67/suflyor
 Нужны JDK 17 и Android SDK (platform 36).
 
 ```bash
-git clone https://github.com/olerast67/suflyor.git
+git clone https://github.com/olerast67/voice-teleprompter-android.git
 cd suflyor
 ./gradlew assembleDebug testDebugUnitTest
 ```
@@ -145,7 +147,51 @@ cd suflyor
 - **Языковые пакеты:** испанский, немецкий, итальянский, польский, вьетнамский и другие языки, для которых есть компактные потоковые модели. Пакет — это файл, который открывается приложением, так что разрешение на интернет по-прежнему не понадобится, а APK не вырастет.
 - Зеркальный режим для телесуфлёров со стеклом.
 
-Идеи и голоса за них — в [Issues](https://github.com/olerast67/suflyor/issues).
+Идеи и голоса за них — в [Issues](https://github.com/olerast67/voice-teleprompter-android/issues).
+
+## Частые вопросы
+
+<details>
+<summary><b>Есть ли телесуфлёр для Android, который слышит голос?</b></summary>
+
+Да: Суфлёр слушает микрофон и прокручивает текст к словам, которые ты говоришь. Он бесплатный, с открытым кодом, а распознавание речи работает прямо на телефоне.
+</details>
+
+<details>
+<summary><b>Можно ли пользоваться суфлёром во время записи в Instagram, TikTok или камере?</b></summary>
+
+Да. Суфлёр висит поверх любого приложения, текст начинается сразу под фронтальной камерой. Обычно Android отнимает микрофон у остальных приложений, пока камера пишет видео; слушать дальше суфлёру позволяет служба специальных возможностей, а звук в ролике при этом остаётся.
+</details>
+
+<details>
+<summary><b>Работает ли без интернета? Мой голос куда-то отправляется?</b></summary>
+
+Работает полностью без интернета. У приложения нет разрешения на интернет, поэтому отправить что-либо оно просто не может; звук не записывается и не хранится. Подробнее — в [PRIVACY.md](PRIVACY.md).
+</details>
+
+<details>
+<summary><b>Какие языки он понимает?</b></summary>
+
+Русскую и английскую речь: язык выбирается сам по тексту сценария или задаётся в настройках. Интерфейс на русском и английском. Другие языки появятся как скачиваемые пакеты.
+</details>
+
+<details>
+<summary><b>Работает ли с Bluetooth-пультом?</b></summary>
+
+Да: кнопки громкости, Bluetooth-пульты для селфи, кольца, кликеры для презентаций и клавиатуры ставят на паузу и листают строки. Кнопки можно переназначить. Есть и прокрутка по скорости с отсчётом 3-2-1.
+</details>
+
+<details>
+<summary><b>Это бесплатно? Есть платная версия?</b></summary>
+
+Бесплатно: без рекламы, аккаунтов и платных функций. Код под лицензией GPL-3.0. Если суфлёр помогает, можно [поддержать проект](DONATE.md).
+</details>
+
+<details>
+<summary><b>Какие телефоны поддерживаются? Есть версия для iPhone?</b></summary>
+
+Android 10 и новее на 64-битном ARM-телефоне (почти любой после 2017 года). Версии для iPhone нет: iOS не позволяет приложению показывать окно поверх других приложений, как это нужно Суфлёру.
+</details>
 
 ## Поддержать проект
 

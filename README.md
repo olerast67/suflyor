@@ -1,27 +1,29 @@
 <p align="center">
-  <img src="docs/images/banner.png" alt="Suflyor: the teleprompter that listens" width="100%">
+  <img src="docs/images/banner.png" alt="Suflyor — voice-following teleprompter app for Android" width="100%">
 </p>
 
+<h1 align="center">Suflyor — voice-following teleprompter for Android</h1>
+
 <p align="center">
-  <a href="https://github.com/olerast67/suflyor/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/olerast67/suflyor?style=flat-square&color=FFB020&label=release"></a>
-  <a href="https://github.com/olerast67/suflyor/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/olerast67/suflyor/total?style=flat-square&color=46D778"></a>
-  <a href="https://github.com/olerast67/suflyor/actions/workflows/ci.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/olerast67/suflyor/ci.yml?branch=main&style=flat-square&label=build"></a>
+  <a href="https://github.com/olerast67/voice-teleprompter-android/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/olerast67/voice-teleprompter-android?style=flat-square&color=FFB020&label=release"></a>
+  <a href="https://github.com/olerast67/voice-teleprompter-android/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/olerast67/voice-teleprompter-android/total?style=flat-square&color=46D778"></a>
+  <a href="https://github.com/olerast67/voice-teleprompter-android/actions/workflows/ci.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/olerast67/voice-teleprompter-android/ci.yml?branch=main&style=flat-square&label=build"></a>
   <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square"></a>
   <img alt="Android 10+" src="https://img.shields.io/badge/Android-10%2B-3DDC84?style=flat-square&logo=android&logoColor=white">
   <a href="PRIVACY.md"><img alt="No internet permission" src="https://img.shields.io/badge/network-none-9F7AEA?style=flat-square"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/olerast67/suflyor/releases/latest"><img alt="Get the APK on GitHub" src="https://img.shields.io/badge/Get%20the%20APK-GitHub%20Releases-FFB020?style=for-the-badge&logo=github&logoColor=black" height="42"></a>
+  <a href="https://github.com/olerast67/voice-teleprompter-android/releases/latest"><img alt="Get the APK on GitHub" src="https://img.shields.io/badge/Get%20the%20APK-GitHub%20Releases-FFB020?style=for-the-badge&logo=github&logoColor=black" height="42"></a>
   &nbsp;
-  <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/olerast67/suflyor"><img alt="Get it on Obtainium" src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="42"></a>
+  <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/olerast67/voice-teleprompter-android"><img alt="Get it on Obtainium" src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="42"></a>
 </p>
 
-<p align="center"><b>English</b> · <a href="README.ru.md">Русский</a></p>
+<p align="center"><b>English</b> · <a href="README.ru.md">Русский</a> · <a href="https://olerast67.github.io/voice-teleprompter-android/">🌐 Website</a></p>
 
 ---
 
-**Suflyor** (Russian *суфлёр*, "prompter") is a free, open-source teleprompter for Android that **listens to you**. It floats over Instagram, TikTok or the camera app and scrolls the script as you speak, so you never chase the text. It works fully offline, and the app has no internet permission at all.
+**Suflyor** (Russian *суфлёр*, "prompter") is a free, open-source **teleprompter app for Android that follows your voice**. It floats over Instagram, TikTok or the camera app and scrolls the script as you speak, so you never chase the text: a voice-activated teleprompter for Reels, Shorts and TikToks. It works fully offline, and the app has no internet permission at all.
 
 It is made for creators who hold the phone, read a couple of lines to the lens, look back at the text and carry on. If you stumble and start a sentence again, the text goes back with you. If you skip a paragraph, it catches up.
 
@@ -91,7 +93,7 @@ The details are in [PRIVACY.md](PRIVACY.md).
 
 **Requirements:** Android 10 or newer on a 64-bit ARM phone (almost every phone since 2017), about 130 MB of space: both speech models are inside the app. Tested on a Samsung Galaxy S24 FE with One UI 6.1 (Android 14).
 
-1. Download `Suflyor-<version>.apk` from [Releases](https://github.com/olerast67/suflyor/releases/latest) and open it. Allow your browser or file manager to install apps when asked.
+1. Download `Suflyor-<version>.apk` from [Releases](https://github.com/olerast67/voice-teleprompter-android/releases/latest) and open it. Allow your browser or file manager to install apps when asked.
 2. Open Suflyor and allow the **microphone**.
 3. Turn on the accessibility service **“Suflyor: floating window and voice”** (on a Russian phone: «Суфлёр: окно поверх и голос»). The app takes you to the right screen.
    - On Android 13 and newer, apps installed from a file can't use accessibility at first, and the switch is greyed out. Go to **Settings → Apps → Suflyor → ⋮ → Allow restricted settings**, then turn the service on again.
@@ -125,7 +127,7 @@ Release APKs are built by [GitHub Actions](.github/workflows/release.yml) from t
 # The certificate must match the SHA-256 above:
 apksigner verify --print-certs Suflyor-*.apk
 # Proves the APK was built by this repository's workflow:
-gh attestation verify Suflyor-*.apk --repo olerast67/suflyor
+gh attestation verify Suflyor-*.apk --owner olerast67
 ```
 
 [AppVerifier](https://github.com/soupslurpr/AppVerifier) can check the certificate on the phone.
@@ -135,7 +137,7 @@ gh attestation verify Suflyor-*.apk --repo olerast67/suflyor
 You need JDK 17 and the Android SDK (platform 36).
 
 ```bash
-git clone https://github.com/olerast67/suflyor.git
+git clone https://github.com/olerast67/voice-teleprompter-android.git
 cd suflyor
 ./gradlew assembleDebug testDebugUnitTest
 ```
@@ -165,7 +167,51 @@ cd suflyor
 - **Language packs:** Spanish, German, Italian, Polish, Vietnamese and other languages that have compact streaming models. They will be files you open with the app, so it still needs no internet permission and the APK doesn't grow.
 - Mirror mode for beam-splitter teleprompter glass.
 
-Ideas and votes are welcome in [Issues](https://github.com/olerast67/suflyor/issues).
+Ideas and votes are welcome in [Issues](https://github.com/olerast67/voice-teleprompter-android/issues).
+
+## FAQ
+
+<details>
+<summary><b>Is there a teleprompter app for Android that follows your voice?</b></summary>
+
+Yes: Suflyor listens through the microphone and scrolls to the words you are saying. It is free and open source, and the speech recognition runs on the phone.
+</details>
+
+<details>
+<summary><b>Can I use a teleprompter while recording in Instagram, TikTok or the camera app?</b></summary>
+
+Yes. Suflyor floats over any app, and its text starts right under the front camera. Android normally takes the microphone away from other apps while a camera app records; Suflyor's accessibility service is what lets it keep listening (the reel still gets its sound).
+</details>
+
+<details>
+<summary><b>Does it work offline? Is my voice sent anywhere?</b></summary>
+
+It works fully offline. The app has no internet permission, so it can't send anything anywhere; audio is never recorded or stored. See [PRIVACY.md](PRIVACY.md).
+</details>
+
+<details>
+<summary><b>Which languages does it understand?</b></summary>
+
+English and Russian speech, picked automatically from the script or set in Settings. The interface is in English and Russian. More languages are planned as downloadable packs.
+</details>
+
+<details>
+<summary><b>Does it work with a Bluetooth remote?</b></summary>
+
+Yes: volume keys, Bluetooth selfie remotes, rings, presentation clickers and keyboards can pause, go back or forward a line. Keys can be reassigned. Timed scrolling with a 3-2-1 countdown is there too.
+</details>
+
+<details>
+<summary><b>Is it free? Is there a Pro version?</b></summary>
+
+Free, with no ads, no accounts and no paid features. The code is GPL-3.0. If it helps you, you can [support it](DONATE.md).
+</details>
+
+<details>
+<summary><b>Which phones are supported? Is there an iPhone version?</b></summary>
+
+Android 10 or newer on a 64-bit ARM phone (almost every phone since 2017). There is no iOS version: iOS doesn't let an app float a window over other apps the way Suflyor needs.
+</details>
 
 ## Support the project
 

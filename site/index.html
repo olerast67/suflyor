@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suflyor — free voice teleprompter app for Android (offline, open source)</title>
+<meta name="description" content="Suflyor is a free teleprompter app for Android that follows your voice and floats over Instagram, TikTok and the camera. Offline, open source, English and Russian.">
+<link rel="canonical" href="https://olerast67.github.io/voice-teleprompter-android/">
+<link rel="alternate" hreflang="en" href="https://olerast67.github.io/voice-teleprompter-android/">
+<link rel="alternate" hreflang="ru" href="https://olerast67.github.io/voice-teleprompter-android/ru/">
+<link rel="alternate" hreflang="x-default" href="https://olerast67.github.io/voice-teleprompter-android/">
+<meta name="theme-color" content="#0e0e11">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Suflyor">
+<meta property="og:title" content="Suflyor — the teleprompter that listens">
+<meta property="og:description" content="A free Android teleprompter that follows your voice and floats over Instagram, TikTok and the camera. Offline, open source.">
+<meta property="og:url" content="https://olerast67.github.io/voice-teleprompter-android/">
+<meta property="og:image" content="https://olerast67.github.io/voice-teleprompter-android/images/banner.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="Suflyor: a teleprompter window over a phone camera, following the reader's voice">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Suflyor",
+      "alternateName": ["Суфлёр", "Suflyor voice teleprompter"],
+      "description": "A free, open-source teleprompter app for Android that follows your voice and floats over Instagram, TikTok and the camera. Speech recognition runs on the phone; the app has no internet permission.",
+      "applicationCategory": "MultimediaApplication",
+      "applicationSubCategory": "Teleprompter",
+      "operatingSystem": "Android 10+",
+      "softwareVersion": "0.4",
+      "datePublished": "2026-09-26",
+      "inLanguage": ["en", "ru"],
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "downloadUrl": "https://github.com/olerast67/voice-teleprompter-android/releases/latest",
+      "fileSize": "126 MB",
+      "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+      "image": "https://olerast67.github.io/voice-teleprompter-android/images/banner.png",
+      "screenshot": [
+        "https://olerast67.github.io/voice-teleprompter-android/images/screens/en/1-library.png",
+        "https://olerast67.github.io/voice-teleprompter-android/images/screens/en/2-script.png",
+        "https://olerast67.github.io/voice-teleprompter-android/images/screens/en/3-editor.png",
+        "https://olerast67.github.io/voice-teleprompter-android/images/screens/en/4-settings.png"
+      ],
+      "featureList": [
+        "Follows your voice with on-device speech recognition (English and Russian)",
+        "Floats over Instagram, TikTok and the camera app while they record",
+        "Handles retakes and skipped lines",
+        "Bluetooth remotes, volume keys and timed scrolling",
+        "Imports TXT, Markdown, DOCX, ODT, RTF, HTML and PDF",
+        "Works offline, no internet permission"
+      ],
+      "author": { "@type": "Person", "name": "olerast67", "url": "https://github.com/olerast67" },
+      "sameAs": ["https://github.com/olerast67/voice-teleprompter-android"]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "Is there a teleprompter app for Android that follows your voice?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Suflyor listens through the microphone and scrolls to the words you are saying. It is free and open source, and the speech recognition runs on the phone." } },
+        { "@type": "Question", "name": "Can I use a teleprompter while recording in Instagram, TikTok or the camera app?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Suflyor floats over any app, with the text right under the front camera. Its accessibility service lets it keep hearing you while the camera app records, and your video still gets its sound." } },
+        { "@type": "Question", "name": "Does it work offline? Is my voice sent anywhere?",
+          "acceptedAnswer": { "@type": "Answer", "text": "It works fully offline. The app has no internet permission, so it cannot send anything; audio is never recorded or stored." } },
+        { "@type": "Question", "name": "Which languages does it understand?",
+          "acceptedAnswer": { "@type": "Answer", "text": "English and Russian speech, picked automatically from the script or set in Settings. The interface is in English and Russian." } },
+        { "@type": "Question", "name": "Does it work with a Bluetooth remote?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes: volume keys, Bluetooth selfie remotes, rings, presentation clickers and keyboards can pause and move the text line by line. Keys can be reassigned." } },
+        { "@type": "Question", "name": "Is it free?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes: no ads, no accounts, no paid features. The code is open source under GPL-3.0." } }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="icon-192.png" alt="" width="32" height="32">Suflyor</a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/olerast67/voice-teleprompter-android">GitHub</a>
+      <a class="lang" href="ru/" hreflang="ru" lang="ru">RU</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">Free · open source · offline</p>
+      <h1>The teleprompter that listens</h1>
+      <p class="lead">Suflyor is a free <b>teleprompter app for Android that follows your voice</b>. It floats over Instagram, TikTok or the camera and scrolls your script as you speak, so you never chase the text — and it works without the internet.</p>
+      <div class="actions">
+        <a class="btn primary" href="https://github.com/olerast67/voice-teleprompter-android/releases/latest">⬇ Download APK</a>
+        <a class="btn" href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/olerast67/voice-teleprompter-android">Get it on Obtainium</a>
+      </div>
+      <p class="meta">Version 0.4 · Android 10+ · 126 MB · English &amp; Russian · <a href="https://github.com/olerast67/voice-teleprompter-android">Source code</a></p>
+    </div>
+    <img class="phone" src="images/screens/en/2-script.png" width="1080" height="2113" alt="Suflyor script screen with the teleprompter text and the Over the camera button" fetchpriority="high">
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <h2>A teleprompter for Reels, Shorts and TikToks</h2>
+    <p class="sub">Made for creators who hold the phone, read a couple of lines to the lens, look back at the text and carry on.</p>
+    <div class="grid">
+      <div class="card"><span class="icon" aria-hidden="true">🎙️</span><h3>Follows your voice</h3><p>Speech recognition on the phone finds your place in the script. Re-read a line and the text goes back; skip a paragraph and it catches up.</p></div>
+      <div class="card"><span class="icon" aria-hidden="true">📱</span><h3>Over any camera app</h3><p>Works over Instagram, TikTok and the stock camera while they record. The text sits right under the front camera, so your eyes stay near the lens.</p></div>
+      <div class="card"><span class="icon" aria-hidden="true">🔒</span><h3>Lock and landscape</h3><p>Lock mode lets taps reach the camera's buttons. For landscape video the window moves next to the lens and turns the text.</p></div>
+      <div class="card"><span class="icon" aria-hidden="true">🎮</span><h3>Remotes and auto-scroll</h3><p>Volume keys, Bluetooth selfie remotes, rings and keyboards. Or timed scrolling with a 3-2-1 countdown.</p></div>
+      <div class="card"><span class="icon" aria-hidden="true">📄</span><h3>Opens almost anything</h3><p>TXT, Markdown and Obsidian notes, DOCX, ODT, RTF, HTML and PDF — or paste and type in the editor.</p></div>
+      <div class="card"><span class="icon" aria-hidden="true">🌍</span><h3>English and Russian</h3><p>Both speech models are inside the app; the language is picked from your script. More languages are coming as packs.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="sub">No account, no setup beyond two Android permissions.</p>
+    <div class="steps">
+      <div class="step"><h3>Add your script</h3><p>Open a file, share text from any app, paste or type it. Long paragraphs are split into phrases you can say in one breath.</p></div>
+      <div class="step"><h3>Pick the camera</h3><p>Choose Instagram, TikTok or Camera and tap <b>Over the camera</b>. The prompter window appears on top.</p></div>
+      <div class="step"><h3>Just talk</h3><p>Record as usual. The text follows you, waits in pauses and ignores what you say off script.</p></div>
+    </div>
+    <p style="margin:32px 0 0"><img class="shots" src="images/screens.png" width="1404" height="683" loading="lazy" alt="Suflyor screens: script library, script preview, editor and settings"></p>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="wrap">
+    <h2>Private by design</h2>
+    <p class="sub">Your voice and your scripts never leave the phone.</p>
+    <ul class="checks">
+      <li><b>No internet permission.</b> Android doesn't let the app connect anywhere — you can check it in the app's permissions.</li>
+      <li><b>Audio is never recorded or stored.</b> It is turned into words on the phone while a session runs.</li>
+      <li><b>The accessibility service can't read your screen.</b> It only keeps the microphone working while another app records, and works only during a session.</li>
+      <li><b>No ads, no analytics, no accounts.</b> The code is open (GPL-3.0), and releases are reproducible: the APK on GitHub is byte-identical to one built from the source.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <h2>Install</h2>
+    <ol class="install">
+      <li>Download <b>Suflyor-0.4.apk</b> from <a href="https://github.com/olerast67/voice-teleprompter-android/releases/latest">GitHub Releases</a> and open it. For automatic updates use <a href="https://github.com/ImranR98/Obtainium">Obtainium</a>.</li>
+      <li>Allow the <b>microphone</b> when the app asks.</li>
+      <li>Turn on the accessibility service <b>“Suflyor: floating window and voice”</b>. On Android 13+ first open Settings → Apps → Suflyor → ⋮ → <b>Allow restricted settings</b>.</li>
+      <li>Open a script, pick the camera app and tap <b>Over the camera</b>.</li>
+    </ol>
+    <p class="meta" style="margin-top:14px">If Android says the developer isn't verified, see the <a href="https://github.com/olerast67/voice-teleprompter-android#if-android-says-the-developer-isnt-verified">install guide</a>.</p>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2>FAQ</h2>
+    <details><summary>Is there a teleprompter app for Android that follows your voice?</summary><p>Yes: Suflyor listens through the microphone and scrolls to the words you are saying. It is free and open source, and the speech recognition runs on the phone.</p></details>
+    <details><summary>Can I use a teleprompter while recording in Instagram, TikTok or the camera app?</summary><p>Yes. Suflyor floats over any app, with the text right under the front camera. Android normally takes the microphone away from other apps while a camera app records; Suflyor's accessibility service lets it keep listening, and your video still gets its sound.</p></details>
+    <details><summary>Does it work offline? Is my voice sent anywhere?</summary><p>It works fully offline. The app has no internet permission, so it can't send anything anywhere; audio is never recorded or stored.</p></details>
+    <details><summary>Which languages does it understand?</summary><p>English and Russian speech, picked automatically from the script or set in Settings. The interface is in English and Russian. More languages are planned as downloadable packs.</p></details>
+    <details><summary>Does it work with a Bluetooth remote?</summary><p>Yes: volume keys, Bluetooth selfie remotes, rings, presentation clickers and keyboards can pause and move the text line by line. Keys can be reassigned.</p></details>
+    <details><summary>Is it free? Is there a Pro version?</summary><p>Free: no ads, no accounts, no paid features. The code is GPL-3.0. If it helps you, you can support it below.</p></details>
+    <details><summary>Is there an iPhone version?</summary><p>No: iOS doesn't let an app float a window over other apps the way Suflyor needs. It needs Android 10 or newer on a 64-bit ARM phone.</p></details>
+  </div>
+</section>
+
+<section id="support">
+  <div class="wrap">
+    <h2>Support Suflyor</h2>
+    <p class="sub">Free forever, no ads. If it saves you retakes, a donation helps add languages and test more phones. A star on GitHub helps other creators find it.</p>
+    <div class="support">
+      <a class="btn primary" href="https://boosty.to/olerast/donate">💛 Donate on Boosty</a>
+      <a class="btn" href="https://github.com/olerast67/voice-teleprompter-android">⭐ Star on GitHub</a>
+      <div class="wallet"><small>USDT · TRON (TRC20) only</small><code>TLS1C2LbbfAtzBQMyU9gppCS8qEXsYeyzQ</code></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Suflyor · GPL-3.0</span>
+    <a href="https://github.com/olerast67/voice-teleprompter-android">Source code</a>
+    <a href="https://github.com/olerast67/voice-teleprompter-android/blob/main/PRIVACY.md">Privacy</a>
+    <a href="https://github.com/olerast67/voice-teleprompter-android/blob/main/DONATE.md">Donate</a>
+    <a href="ru/" hreflang="ru" lang="ru">Русская версия</a>
+  </div>
+</footer>
+</body>
+</html>

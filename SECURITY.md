@@ -29,5 +29,5 @@ To check a file:
 
 ```bash
 apksigner verify --print-certs Suflyor-*.apk
-gh attestation verify Suflyor-*.apk --repo olerast67/suflyor
+gh attestation verify Suflyor-*.apk --owner olerast67
 ```

@@ -1,7 +1,7 @@
 ﻿# One-time setup of the GitHub repository after it is created and pushed. Needs the GitHub CLI, logged in
 # ("gh auth login"). Run from anywhere:
-#   .\tools\github-setup.ps1 -Repo yourname/suflyor
-#   .\tools\github-setup.ps1 -Repo yourname/suflyor -SkipSecrets     # only links and settings
+#   .\tools\github-setup.ps1 -Repo yourname/voice-teleprompter-android
+#   .\tools\github-setup.ps1 -Repo yourname/voice-teleprompter-android -SkipSecrets     # only links and settings
 #
 # What it does:
 #   1. replaces the OWNER/suflyor placeholder in README, SECURITY and FUNDING links with the real repository;

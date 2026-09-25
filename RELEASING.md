@@ -15,16 +15,16 @@ How the maintainer publishes Suflyor. Users don't need any of this.
 4. **Fill in the donation links** in `DONATE.md` and `.github/FUNDING.yml` (see [Donations](#donations)): links, and wallet addresses if you use crypto, or delete the rows you don't need. Until no placeholder is left, release notes leave out the donate line.
 5. **Create the repository** on GitHub as **private** and empty: no README, license or .gitignore, because they are already here. Then push:
    ```bash
-   git remote add origin https://github.com/USERNAME/suflyor.git
+   git remote add origin https://github.com/USERNAME/voice-teleprompter-android.git
    git push -u origin main
    ```
 6. **Run the setup script.** It fills in the repository links, stores the signing key as Actions secrets and sets the description and topics:
    ```powershell
-   .\tools\github-setup.ps1 -Repo USERNAME/suflyor
+   .\tools\github-setup.ps1 -Repo USERNAME/voice-teleprompter-android
    git add -A ; git commit -m "Point links at the repository" ; git push
    ```
    In **Settings → Actions → General**, set *Workflow permissions* to read-only; the release workflow asks for write access itself.
-7. **Check the README on GitHub, then make the repository public:** **Settings → General → Danger Zone → Change visibility**. Run the script once more, `.\tools\github-setup.ps1 -Repo USERNAME/suflyor -SkipSecrets`: private vulnerability reporting and immutable releases can only be switched on for a public repository. Check in **Settings → General → Releases** that *immutable releases* is on. Push the first release tag only after this: build attestations need a public repository.
+7. **Check the README on GitHub, then make the repository public:** **Settings → General → Danger Zone → Change visibility**. Run the script once more, `.\tools\github-setup.ps1 -Repo USERNAME/voice-teleprompter-android -SkipSecrets`: private vulnerability reporting and immutable releases can only be switched on for a public repository. Check in **Settings → General → Releases** that *immutable releases* is on. Push the first release tag only after this: build attestations need a public repository.
 8. **Upload the banner as the social preview.** Go to **Settings → General → Social preview** and upload `docs/images/banner.png`.
 
 ## Each release
