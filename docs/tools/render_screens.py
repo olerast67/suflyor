@@ -1,17 +1,21 @@
-"""Combines the screenshots in docs/images/screens/ into docs/images/screens.png for the README.
+"""Combines the screenshots of one language into the README picture.
 
-    python docs/tools/render_screens.py
+    python docs/tools/render_screens.py [en|ru]
 
-Takes up to four PNGs in name order (1-library.png, 2-script.png, ...), rounds their corners, adds a soft shadow
-and lays them out side by side on the banner's dark background.
+Takes up to four PNGs from docs/images/screens/<locale>/ in name order (1-library.png, 2-script.png, ...), rounds
+their corners, adds a soft shadow and lays them out side by side on the banner's dark background. English goes to
+docs/images/screens.png (README.md), Russian to docs/images/screens-ru.png (README.ru.md).
 """
 import glob
 import os
+import sys
 from PIL import Image, ImageDraw, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SHOTS = os.path.join(HERE, "..", "images", "screens")
-OUT = os.path.join(HERE, "..", "images", "screens.png")
+LOCALE = sys.argv[1] if len(sys.argv) > 1 else "en"
+SHOTS = os.path.join(HERE, "..", "images", "screens", LOCALE)
+# English is the README's picture; other languages get their own file for their README.
+OUT = os.path.join(HERE, "..", "images", "screens.png" if LOCALE == "en" else f"screens-{LOCALE}.png")
 BG = (14, 14, 17)
 PHONE_W = 300
 GAP = 36

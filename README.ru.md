@@ -31,7 +31,7 @@
 ## Скриншоты
 
 <p align="center">
-  <img src="docs/images/screens.png" alt="Библиотека, сценарий, редактор и настройки" width="100%">
+  <img src="docs/images/screens-ru.png" alt="Библиотека, сценарий, редактор и настройки" width="100%">
 </p>
 
 ## Возможности

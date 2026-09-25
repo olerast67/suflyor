@@ -18,4 +18,4 @@
 
 <p><b>Private</b>: the app has no internet permission. Audio never leaves the phone. The accessibility service works only during a session and cannot read screen content.</p>
 
-<p>Speech recognition is Russian-only for now; English is coming next.</p>
+<p>Speaks English and Russian: the interface follows your phone's language, and the speech language is picked from your script.</p>

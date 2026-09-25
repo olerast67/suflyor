@@ -1,0 +1,1 @@
+English: the interface follows your phone's language, and a new English speech model follows English scripts (contractions, numbers, abbreviations). The speech language is picked from the script or set in Settings. Plus fixes from a full code review.

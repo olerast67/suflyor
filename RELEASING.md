@@ -11,7 +11,7 @@ How the maintainer publishes Suflyor. Users don't need any of this.
    # Rewrites the author of every local commit. Do this only before the first push.
    git rebase --root --exec "git commit --amend --reset-author --no-edit"
    ```
-3. **Take the screenshots** (see [Screenshots](#screenshots)): both READMEs show `docs/images/screens.png`.
+3. **Take the screenshots** (see [Screenshots](#screenshots)): README.md shows `docs/images/screens.png`, README.ru.md shows `docs/images/screens-ru.png`.
 4. **Fill in the donation links** in `DONATE.md` and `.github/FUNDING.yml` (see [Donations](#donations)): links, and wallet addresses if you use crypto, or delete the rows you don't need. Until no placeholder is left, release notes leave out the donate line.
 5. **Create the repository** on GitHub as **private** and empty: no README, license or .gitignore, because they are already here. Then push:
    ```bash
@@ -67,12 +67,14 @@ With the phone connected over USB:
 
 ```powershell
 .\build.ps1
-.\tools\capture-screenshots.ps1               # library, script, editor, settings
-.\tools\capture-screenshots.ps1 -Manual 5-overlay   # anything on screen now, e.g. the prompter over the camera
-python docs\tools\render_screens.py           # docs/images/screens.png for the README
+.\tools\capture-screenshots.ps1                          # English: library, script, editor, settings
+.\tools\capture-screenshots.ps1 -Locale ru               # the same in Russian
+.\tools\capture-screenshots.ps1 -Locale en -Manual 5-overlay   # anything on screen now, e.g. the prompter over the camera
+python docs\tools\render_screens.py en                   # docs/images/screens.png for README.md
+python docs\tools\render_screens.py ru                   # docs/images/screens-ru.png for README.ru.md
 ```
 
-The status and navigation bars are cropped, so notifications never end up in the pictures.
+The status and navigation bars are cropped, so notifications never end up in the pictures. Allow the microphone and turn on the accessibility service of the debug build ("Suflyor dev") first, so the screens show no setup warnings; the script keeps those permissions when it resets the app's data.
 
 ## Donations
 

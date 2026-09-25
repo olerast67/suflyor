@@ -1,12 +1,16 @@
-﻿# Takes the README screenshots from a phone connected over USB ("USB debugging" on).
-#   .\tools\capture-screenshots.ps1            library, script, editor, settings -> docs\images\screens\*.png
-#   .\tools\capture-screenshots.ps1 -Manual overlay
-#                                              saves whatever is on the screen now as overlay.png (for the prompter
-#                                              over the camera, which needs permissions this script doesn't grant)
-# Uses the debug build (package com.olerast.suflyor.debug) with fresh data, so only the built-in sample script
-# shows. Status and navigation bars are cut off, so notifications and the clock never end up in the pictures.
-# Build first: .\build.ps1
-param([string]$Manual)
+﻿# Takes the README screenshots from a phone connected over USB ("USB debugging" on), in English or Russian.
+#   .\tools\capture-screenshots.ps1                 English: library, script, editor, settings -> docs\images\screens\en\
+#   .\tools\capture-screenshots.ps1 -Locale ru      the same in Russian -> docs\images\screens\ru\
+#   .\tools\capture-screenshots.ps1 -Locale en -Manual 5-overlay
+#                                                   saves whatever is on the screen now (e.g. the prompter over the camera)
+# Uses the debug build (package com.olerast.suflyor.debug). Its scripts and settings are wiped through run-as, which
+# keeps the permissions and the accessibility service you granted, so only the built-in sample in that language shows.
+# The app language is set per app (Android 13+). Status and navigation bars are cut off, so notifications and the clock
+# never end up in the pictures. Build first: .\build.ps1; afterwards: python docs\tools\render_screens.py <locale>
+param(
+    [ValidateSet('en', 'ru')][string]$Locale = 'en',
+    [string]$Manual
+)
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
@@ -14,10 +18,18 @@ $props = Get-Content (Join-Path $root 'local.properties')
 $sdk = (($props | Where-Object { $_ -match '^\s*sdk\.dir\s*=' } | Select-Object -First 1) -replace '^\s*sdk\.dir\s*=\s*', '') -replace '\\(.)', '$1'
 $adb = Join-Path $sdk 'platform-tools\adb.exe'
 $package = 'com.olerast.suflyor.debug'
-$out = Join-Path $root 'docs\images\screens'
+$out = Join-Path $root "docs\images\screens\$Locale"
 New-Item -ItemType Directory -Force $out | Out-Null
+$store = Join-Path $root ("fastlane\metadata\android\{0}\images\phoneScreenshots" -f @{ en = 'en-US'; ru = 'ru-RU' }[$Locale])
+New-Item -ItemType Directory -Force $store | Out-Null
 $tmp = Join-Path ([IO.Path]::GetTempPath()) 'suflyor-shots'
 New-Item -ItemType Directory -Force $tmp | Out-Null
+
+# What the script taps, as the app shows it in each language.
+$labels = @{
+    en = @{ Sample = 'Sample'; Edit = 'Edit'; Settings = 'Settings' }
+    ru = @{ Sample = 'Пример'; Edit = 'Редактировать'; Settings = 'Настройки' }
+}[$Locale]
 
 # adb writes progress ("1 file pulled") to stderr; Windows PowerShell 5.1 would turn that into a terminating error
 # under ErrorActionPreference=Stop, so stderr is collected here and only the exit code decides.
@@ -51,14 +63,12 @@ function Save-Screen([string]$name) {
     python (Join-Path $root 'docs\tools\crop_screen.py') $raw (Join-Path $out "$name.png") $bars.Top $bars.Bottom
     if ($LASTEXITCODE -ne 0) { throw "Could not crop $name.png (python with Pillow is needed)" }
     # Store listings (IzzyOnDroid, F-Droid) read the same pictures from the fastlane folder.
-    $store = Join-Path $root 'fastlane\metadata\android\en-US\images\phoneScreenshots'
-    New-Item -ItemType Directory -Force $store | Out-Null
     Copy-Item (Join-Path $out "$name.png") $store -Force
-    Write-Host "saved $name.png"
+    Write-Host "saved $Locale/$name.png"
 }
 
-# Taps the first element whose text or description matches. uiautomator is safe here: the debug build has
-# no accessibility service enabled, so the dump cannot rebind it.
+# Taps the first element whose text or description matches. uiautomator dumps rebind enabled accessibility
+# services; that is harmless here because no prompter session runs while the screenshots are taken.
 function Tap([string]$label) {
     Adb shell uiautomator dump /sdcard/suflyor-ui.xml | Out-Null
     $xml = Join-Path $tmp 'ui.xml'
@@ -71,6 +81,11 @@ function Tap([string]$label) {
     Adb shell input tap ([int](($b[0] + $b[2]) / 2)) ([int](($b[1] + $b[3]) / 2))
 }
 
+function Start-App {
+    Adb shell am start -W -n "$package/com.olerast.suflyor.MainActivity" | Out-Null
+    Start-Sleep -Seconds 2
+}
+
 if ($Manual) {
     Save-Screen $Manual
     return
@@ -79,21 +94,19 @@ if ($Manual) {
 $apk = Join-Path $root 'app\build\outputs\apk\debug\app-debug.apk'
 if (-not (Test-Path $apk)) { throw 'Build the debug APK first: .\build.ps1' }
 Adb install -r $apk | Out-Null
-Adb shell pm clear $package | Out-Null
-Adb shell am start -W -n "$package/com.olerast.suflyor.MainActivity" | Out-Null
-Start-Sleep -Seconds 2
+Adb shell am force-stop $package | Out-Null
+# Fresh scripts and settings, but granted permissions stay (pm clear would revoke them).
+Adb shell run-as $package rm -rf files/scripts files/script.json shared_prefs | Out-Null
+Adb shell cmd locale set-app-locales $package --user 0 --locales $Locale | Out-Null
+Start-App
 
 Save-Screen '1-library'
-Tap 'Пример'
+Tap $labels.Sample
 Save-Screen '2-script'
-Tap 'Редактировать'
+Tap $labels.Edit
 Save-Screen '3-editor'
-Adb shell input keyevent KEYCODE_BACK
-Adb shell input keyevent KEYCODE_BACK
-Start-Sleep -Milliseconds 600
-Adb shell input keyevent KEYCODE_BACK
-Start-Sleep -Milliseconds 600
-Adb shell am start -W -n "$package/com.olerast.suflyor.MainActivity" | Out-Null
-Tap 'Настройки'
+Adb shell am force-stop $package | Out-Null
+Start-App
+Tap $labels.Settings
 Save-Screen '4-settings'
-Write-Host "Done. Pictures are in $out; run python docs\tools\render_screens.py for the combined image."
+Write-Host "Done. Pictures are in $out; run: python docs\tools\render_screens.py $Locale"

@@ -9,6 +9,8 @@ Suflyor is licensed under the GNU GPL v3.0 (see [LICENSE](LICENSE)). It includes
 | [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) 1.13.8 (Android AAR) | Streaming speech recognition on the device | Apache-2.0 | [v1.13.8](https://github.com/k2-fsa/sherpa-onnx/tree/v1.13.8) |
 | [ONNX Runtime](https://github.com/microsoft/onnxruntime) (`libonnxruntime.so`, from the AAR) | Runs the neural network | MIT | https://github.com/microsoft/onnxruntime |
 | [vosk-model-small-streaming-ru](https://huggingface.co/alphacep/vosk-model-small-streaming-ru), int8 export by sherpa-onnx | Russian speech model | Apache-2.0 | [model](https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-small-ru-vosk-int8-2025-08-16) |
+| Streaming Zipformer for English by the [icefall](https://github.com/k2-fsa/icefall) project (LibriSpeech, 2023-05-17), exported by sherpa-onnx | English speech model | Apache-2.0 | [model](https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-en-2023-06-26), [checkpoint](https://huggingface.co/Zengwei/icefall-asr-librispeech-streaming-zipformer-2023-05-17) |
+| LibriSpeech BPE-500 vocabulary (icefall) | Script-word hints for the English model | Apache-2.0 | [vocab](https://huggingface.co/csukuangfj/icefall-asr-librispeech-conformer-ctc-jit-bpe-500-2021-11-09) |
 | AndroidX: Jetpack Compose, Activity, Core | User interface | Apache-2.0 | https://developer.android.com/jetpack/androidx |
 | Kotlin standard library | Runtime | Apache-2.0 | https://github.com/JetBrains/kotlin |
 | kotlinx.coroutines | Runtime used by Compose | Apache-2.0 | https://github.com/Kotlin/kotlinx.coroutines |
@@ -28,6 +30,8 @@ The prebuilt sherpa-onnx library also contains code the app does not call (text-
 | [nlohmann/json](https://github.com/nlohmann/json) | MIT | https://github.com/nlohmann/json |
 
 The corresponding source for these binaries is the sherpa-onnx [v1.13.8 tag](https://github.com/k2-fsa/sherpa-onnx/tree/v1.13.8) together with the dependency versions its CMake files pin. If you need a copy of that source and cannot get it from there, open an issue and it will be provided.
+
+The English model was trained on [LibriSpeech](https://www.openslr.org/12) by V. Panayotov, G. Chen, D. Povey and S. Khudanpur (CC BY 4.0).
 
 ## Not stored in this repository
 
