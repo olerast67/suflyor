@@ -81,10 +81,40 @@ function Tap([string]$label) {
     Adb shell input tap ([int](($b[0] + $b[2]) / 2)) ([int](($b[1] + $b[3]) / 2))
 }
 
-function Start-App {
+# A locked or sleeping phone would give pictures of the lock screen.
+function Assert-Unlocked {
+    $power = (& $adb shell dumpsys power) -join "`n"
+    $window = (& $adb shell dumpsys window) -join "`n"
+    if ($power -notmatch 'mWakefulness=Awake' -or $window -match 'isKeyguardShowing=true') {
+        throw 'Unlock the phone and keep the screen on (Developer options -> Stay awake keeps it on while charging).'
+    }
+}
+
+# The app is restarted by ending its process, not with force-stop: Android keeps a force-stopped app's accessibility
+# service unbound, but brings a killed one back by itself. The debug build mirrors its journal to logcat, so the
+# app's own "connected" line tells when the service (and with it the readiness shown on screen) is back.
+function Restart-App {
+    Adb logcat -c | Out-Null
+    $procId = ((& $adb shell pidof $package) -join '').Trim()
+    if ($procId) { Adb shell run-as $package kill -9 $procId | Out-Null }
+    Start-Sleep -Seconds 1
+    Wait-Service
     Adb shell am start -W -n "$package/com.olerast.suflyor.MainActivity" | Out-Null
     Start-Sleep -Seconds 2
 }
+
+function Wait-Service {
+    $enabled = (& $adb shell settings get secure enabled_accessibility_services) -join ''
+    if ($enabled -notmatch [regex]::Escape("$package/")) { return }
+    for ($i = 0; $i -lt 60; $i++) {
+        $log = (& $adb logcat -d -s Suflyor:I) -join "`n"
+        if ($log -match 'Accessibility service connected') { return }
+        Start-Sleep -Milliseconds 500
+    }
+    Write-Host 'The accessibility service did not come back; the screens may show it as off.'
+}
+
+Assert-Unlocked
 
 if ($Manual) {
     Save-Screen $Manual
@@ -94,19 +124,22 @@ if ($Manual) {
 $apk = Join-Path $root 'app\build\outputs\apk\debug\app-debug.apk'
 if (-not (Test-Path $apk)) { throw 'Build the debug APK first: .\build.ps1' }
 Adb install -r $apk | Out-Null
-Adb shell am force-stop $package | Out-Null
+Adb shell cmd locale set-app-locales $package --user 0 --locales $Locale | Out-Null
 # Fresh scripts and settings, but granted permissions stay (pm clear would revoke them).
 Adb shell run-as $package rm -rf files/scripts files/script.json shared_prefs | Out-Null
-Adb shell cmd locale set-app-locales $package --user 0 --locales $Locale | Out-Null
-Start-App
+Restart-App
 
 Save-Screen '1-library'
 Tap $labels.Sample
 Save-Screen '2-script'
 Tap $labels.Edit
 Save-Screen '3-editor'
-Adb shell am force-stop $package | Out-Null
-Start-App
+# Editor -> script -> library.
+Adb shell input keyevent KEYCODE_BACK | Out-Null
+Start-Sleep -Milliseconds 700
+Adb shell input keyevent KEYCODE_BACK | Out-Null
+Start-Sleep -Milliseconds 700
+Assert-Unlocked
 Tap $labels.Settings
 Save-Screen '4-settings'
 Write-Host "Done. Pictures are in $out; run: python docs\tools\render_screens.py $Locale"
