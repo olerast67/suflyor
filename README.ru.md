@@ -111,15 +111,17 @@ Google вводит [проверку разработчиков](https://develo
 
 ## Проверка скачанного файла
 
-Релизные APK собирает [GitHub Actions](.github/workflows/release.yml) из исходников с тегом версии. К каждому релизу приложены `SHA256SUMS.txt` и подписанная аттестация происхождения сборки. Все версии подписаны одним ключом:
+Релизные APK собирает [GitHub Actions](.github/workflows/release.yml) из исходников с тегом версии. К каждому релизу приложены `SHA256SUMS.txt` и подписанная аттестация происхождения сборки. Все версии подписаны одним ключом; SHA-256 отпечаток его сертификата:
 
 ```
-SHA-256: 77:F3:94:32:F5:05:FB:B7:8B:85:E7:37:CD:00:21:0A:44:C0:7A:13:2C:AC:FF:81:FE:9D:9D:79:CD:E9:A9:06
+77:F3:94:32:F5:05:FB:B7:8B:85:E7:37:CD:00:21:0A:44:C0:7A:13:2C:AC:FF:81:FE:9D:9D:79:CD:E9:A9:06
 ```
 
 ```bash
-apksigner verify --print-certs Suflyor-*.apk              # сертификат должен совпасть с SHA-256 выше
-gh attestation verify Suflyor-*.apk --repo olerast67/suflyor  # подтверждает, что APK собран workflow этого репозитория
+# Сертификат должен совпасть с SHA-256 выше:
+apksigner verify --print-certs Suflyor-*.apk
+# Подтверждает, что APK собран workflow этого репозитория:
+gh attestation verify Suflyor-*.apk --repo olerast67/suflyor
 ```
 
 Проверить сертификат прямо на телефоне можно приложением [AppVerifier](https://github.com/soupslurpr/AppVerifier).

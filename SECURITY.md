@@ -19,10 +19,10 @@ Out of scope: vulnerabilities in Android itself or in third-party apps (report t
 
 ## Verifying a download
 
-Release APKs are built by GitHub Actions from a tagged commit. Each APK has a SHA-256 checksum file and a build provenance attestation. APKs are signed with this certificate:
+Release APKs are built by GitHub Actions from a tagged commit. Each APK has a SHA-256 checksum file and a build provenance attestation. APKs are signed with the certificate whose SHA-256 fingerprint is:
 
 ```
-SHA-256: 77:F3:94:32:F5:05:FB:B7:8B:85:E7:37:CD:00:21:0A:44:C0:7A:13:2C:AC:FF:81:FE:9D:9D:79:CD:E9:A9:06
+77:F3:94:32:F5:05:FB:B7:8B:85:E7:37:CD:00:21:0A:44:C0:7A:13:2C:AC:FF:81:FE:9D:9D:79:CD:E9:A9:06
 ```
 
 To check a file:

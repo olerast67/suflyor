@@ -115,15 +115,17 @@ Also works: installing from a computer with `adb install Suflyor-<version>.apk`,
 
 ## Verify your download
 
-Release APKs are built by [GitHub Actions](.github/workflows/release.yml) from the tagged source. Each release carries a `SHA256SUMS.txt` file and a signed build-provenance attestation. All releases are signed with the same key:
+Release APKs are built by [GitHub Actions](.github/workflows/release.yml) from the tagged source. Each release carries a `SHA256SUMS.txt` file and a signed build-provenance attestation. All releases are signed with the same key; the SHA-256 fingerprint of its certificate is:
 
 ```
-SHA-256: 77:F3:94:32:F5:05:FB:B7:8B:85:E7:37:CD:00:21:0A:44:C0:7A:13:2C:AC:FF:81:FE:9D:9D:79:CD:E9:A9:06
+77:F3:94:32:F5:05:FB:B7:8B:85:E7:37:CD:00:21:0A:44:C0:7A:13:2C:AC:FF:81:FE:9D:9D:79:CD:E9:A9:06
 ```
 
 ```bash
-apksigner verify --print-certs Suflyor-*.apk            # certificate must match the SHA-256 above
-gh attestation verify Suflyor-*.apk --repo olerast67/suflyor  # proves the APK was built by this repository's workflow
+# The certificate must match the SHA-256 above:
+apksigner verify --print-certs Suflyor-*.apk
+# Proves the APK was built by this repository's workflow:
+gh attestation verify Suflyor-*.apk --repo olerast67/suflyor
 ```
 
 [AppVerifier](https://github.com/soupslurpr/AppVerifier) can check the certificate on the phone.
