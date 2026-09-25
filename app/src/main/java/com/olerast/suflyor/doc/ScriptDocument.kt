@@ -7,7 +7,7 @@ data class ScriptDocument(
     val title: String,
     val format: String,
     val paragraphs: List<Paragraph>,
-    val warnings: List<String> = emptyList(),
+    val warnings: List<ImportWarning> = emptyList(),
 ) {
     val isEmpty: Boolean get() = paragraphs.all { it.text.isBlank() }
 
@@ -26,8 +26,6 @@ data class Paragraph(
 ) {
     enum class Kind { HEADING, BODY }
 }
-
-class ImportException(message: String) : Exception(message)
 
 /**
  * Accumulates text runs of one paragraph, collapsing whitespace and removing invisible characters,

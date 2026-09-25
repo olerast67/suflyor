@@ -24,7 +24,7 @@ object RtfImporter {
 
     fun parse(bytes: ByteArray, title: String): ScriptDocument {
         val src = String(bytes, Charsets.ISO_8859_1)
-        if (!src.startsWith("{\\rtf")) throw ImportException("Это не RTF-файл")
+        if (!src.startsWith("{\\rtf")) throw ImportException(ImportError.NotRtf)
         var charset: Charset = Charset.forName("windows-1252")
         // The font table sits at the start; map each font to the code page of its \fcharset.
         val fontTable = src.indexOf("\\fonttbl").let { if (it < 0) "" else src.substring(it, minOf(src.length, it + 64 * 1024)) }

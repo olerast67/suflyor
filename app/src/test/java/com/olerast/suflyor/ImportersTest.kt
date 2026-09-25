@@ -3,7 +3,9 @@ package com.olerast.suflyor
 import com.olerast.suflyor.doc.DocumentImporter
 import com.olerast.suflyor.doc.DocxImporter
 import com.olerast.suflyor.doc.HtmlImporter
+import com.olerast.suflyor.doc.ImportError
 import com.olerast.suflyor.doc.ImportException
+import com.olerast.suflyor.doc.ImportWarning
 import com.olerast.suflyor.doc.MarkdownImporter
 import com.olerast.suflyor.doc.OdtImporter
 import com.olerast.suflyor.doc.Paragraph
@@ -15,13 +17,18 @@ import com.olerast.suflyor.doc.ScriptDocument
 import com.olerast.suflyor.doc.TextDecoding
 import com.olerast.suflyor.script.PhraseBreaker
 import com.olerast.suflyor.script.ScriptLayout
+import com.olerast.suflyor.script.SpeechLang
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.w3c.dom.Element
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.nio.charset.Charset
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import javax.xml.parsers.DocumentBuilderFactory
 
 class ImportersTest {
     private val ru = "Привет, мир! Это проверка кодировки: ёжик и щука."
@@ -225,7 +232,7 @@ class ImportersTest {
             Sax.onlyLexicalGuard = androidLike
             try {
                 val error = runCatching { DocxImporter.parse(zip("word/document.xml" to late), "t") }.exceptionOrNull()
-                assertTrue("$error", error is ImportException && error.message!!.contains("небезопасен"))
+                assertTrue("$error", error is ImportException && error.error == ImportError.UnsafeDocument)
             } finally {
                 Sax.onlyLexicalGuard = false
             }
@@ -253,7 +260,7 @@ class ImportersTest {
         val w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
         val long = "<w:document xmlns:w=\"$w\"><w:body><w:p><w:r><w:t>${"слово ".repeat(120_000)}</w:t></w:r></w:p></w:body></w:document>"
         val error = runCatching { DocxImporter.parse(zip("word/document.xml" to long), "t") }.exceptionOrNull()
-        assertTrue("$error", error is ImportException)
+        assertTrue("$error", error is ImportException && error.error is ImportError.TextTooLong)
         val nested = "<w:document xmlns:w=\"$w\"><w:body>" + "<w:p>".repeat(100_000) + "<w:r><w:t>глубоко</w:t></w:r>" +
             "</w:p>".repeat(100_000) + "</w:body></w:document>"
         assertEquals(listOf("глубоко"), DocxImporter.parse(zip("word/document.xml" to nested), "t").paragraphs.map { it.text })
@@ -264,6 +271,81 @@ class ImportersTest {
         val rtf = "{\\rtf1\\ansi{\\fonttbl{\\f99999999999\\fnil\\fcharset99999999999 Arial;}}\\f0 Hello\\par}"
         assertEquals(listOf("Hello"), RtfImporter.parse(rtf.toByteArray(Charsets.ISO_8859_1), "t").paragraphs.map { it.text })
     }
+
+    @Test
+    fun importErrorsAndDefaultTitle() {
+        fun importFile(bytes: ByteArray, name: String?) =
+            DocumentImporter.import(bytes, name, null, "Untitled") { _, _ -> error("no PDF here") }
+        fun errorOf(block: () -> Any) = (runCatching(block).exceptionOrNull() as? ImportException)?.error
+
+        assertEquals(ImportError.EmptyFile, errorOf { importFile(ByteArray(0), "a.txt") })
+        assertEquals(ImportError.NoText, errorOf { importFile(" \n\n ".toByteArray(), "a.txt") })
+        assertEquals(ImportError.NotText, errorOf { importFile(ByteArray(100) { 1 }, "a.bin") })
+        val ole2 = byteArrayOf(0xD0.toByte(), 0xCF.toByte(), 0x11, 0xE0.toByte(), 0, 0)
+        assertEquals(ImportError.LegacyDoc, errorOf { importFile(ole2, "a.doc") })
+        assertEquals(ImportError.UnknownZip, errorOf { importFile(zip("mimetype" to "x"), "a.zip") })
+        assertEquals(ImportError.NotRtf, errorOf { RtfImporter.parse("{\\rt".toByteArray(), "t") })
+        val long = "слово ".repeat(60_000)
+        assertEquals(ImportError.TextTooLong(359, 300), errorOf { DocumentImporter.checkSize(DocumentImporter.fromPlainText(long, "t")) })
+
+        // The caller's title (in the UI language) only when the file has no name.
+        assertEquals("Untitled", importFile("Text".toByteArray(), null).title)
+        assertEquals("notes", importFile("Text".toByteArray(), "notes.txt").title)
+    }
+
+    @Test
+    fun warningCodesAndLegacySentences() {
+        for (warning in listOf(ImportWarning.PdfParagraphsRebuilt, ImportWarning.DocxTables(3), ImportWarning.Raw("Что-то: raw:1"))) {
+            assertEquals(warning, ImportWarning.fromCode(warning.code))
+        }
+        assertNull(ImportWarning.fromCode("from_a_newer_version"))
+
+        // What 0.3 saved with the script.
+        assertEquals(
+            ImportWarning.PdfParagraphsRebuilt,
+            ImportWarning.fromLegacyText("Абзацы в PDF восстановлены по строкам — проверь, как разбился текст."),
+        )
+        assertEquals(
+            ImportWarning.DocxTables(2),
+            ImportWarning.fromLegacyText("В документе есть таблицы (2): их ячейки показаны по порядку, как обычный текст."),
+        )
+        assertEquals(ImportWarning.Raw("Другое"), ImportWarning.fromLegacyText("Другое"))
+
+        val w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        val table = "<w:document xmlns:w=\"$w\"><w:body><w:tbl><w:tr><w:tc><w:p><w:r><w:t>ячейка</w:t></w:r></w:p></w:tc></w:tr>" +
+            "</w:tbl></w:body></w:document>"
+        assertEquals(listOf(ImportWarning.DocxTables(1)), DocxImporter.parse(zip("word/document.xml" to table), "t").warnings)
+    }
+
+    @Test
+    fun builtInSampleInBothLanguages() {
+        for ((dir, lang, bold) in listOf(
+            Triple("values", SpeechLang.EN, "Read a couple of lines"),
+            Triple("values-ru", SpeechLang.RU, "Прочитай пару строк"),
+        )) {
+            val doc = MarkdownImporter.parse(resourceString(dir, "sample_script"), resourceString(dir, "sample_title"))
+            assertEquals(Paragraph.Kind.HEADING, doc.paragraphs[0].kind)
+            assertEquals(5, doc.paragraphs.size)
+            assertEquals(listOf(bold), doc.paragraphs.flatMap { p -> p.emphasis.map { p.text.substring(it.first, it.last + 1) } })
+            assertTrue(doc.paragraphs[3].text.startsWith("["))
+            assertEquals(lang, SpeechLang.detect(doc))
+        }
+        // Lint isn't part of the build: every string of this area needs its Russian twin.
+        assertEquals(resourceNames("values"), resourceNames("values-ru"))
+    }
+
+    private fun resourceElements(dir: String): List<Element> {
+        val file = listOf("src/main/res", "app/src/main/res").map { File(it, "$dir/strings_import.xml") }.first { it.exists() }
+        val root = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file).documentElement
+        return (0 until root.childNodes.length).mapNotNull { root.childNodes.item(it) as? Element }
+    }
+
+    private fun resourceNames(dir: String) = resourceElements(dir).map { it.getAttribute("name") }.toSet()
+
+    /** A string as the app sees it: the resource compiler resolves these escapes. */
+    private fun resourceString(dir: String, name: String): String =
+        resourceElements(dir).first { it.tagName == "string" && it.getAttribute("name") == name }.textContent
+            .replace("\\n", "\n").replace("\\'", "'").replace("\\\"", "\"")
 
     private fun zip(vararg entries: Pair<String, String>): ByteArray {
         val out = ByteArrayOutputStream()

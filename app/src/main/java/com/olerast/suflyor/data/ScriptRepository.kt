@@ -6,8 +6,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.olerast.suflyor.App
+import com.olerast.suflyor.R
 import com.olerast.suflyor.Settings
 import com.olerast.suflyor.diag.DiagLog
+import com.olerast.suflyor.doc.ImportWarning
+import com.olerast.suflyor.doc.MarkdownImporter
 import com.olerast.suflyor.doc.Paragraph
 import com.olerast.suflyor.doc.ScriptDocument
 import com.olerast.suflyor.script.ScriptLayout
@@ -31,6 +34,8 @@ class ScriptRepository(context: Context, private val settings: Settings) {
         val updatedAt: Long,
     )
 
+    /** Resources are looked up when needed, so the sample and fallback titles follow the current app language. */
+    private val appContext = context.applicationContext
     private val dir = File(context.filesDir, "scripts").apply { mkdirs() }
     private val legacyFile = File(context.filesDir, "script.json")
 
@@ -110,7 +115,7 @@ class ScriptRepository(context: Context, private val settings: Settings) {
             put("createdAt", createdAt)
             put("updatedAt", System.currentTimeMillis())
             put("words", words)
-            put("warnings", JSONArray(doc.warnings))
+            put(KEY_WARNING_CODES, JSONArray(doc.warnings.map { it.code }))
             put("paragraphs", JSONArray().apply {
                 doc.paragraphs.forEach { p ->
                     put(JSONObject().apply {
@@ -121,7 +126,7 @@ class ScriptRepository(context: Context, private val settings: Settings) {
                 }
             })
         }
-        runCatching { file(id).writeText(json.toString()) }.onFailure { DiagLog.e("Не удалось сохранить сценарий", it) }
+        runCatching { file(id).writeText(json.toString()) }.onFailure { DiagLog.e("Couldn't save script", it) }
     }
 
     private fun read(id: String): ScriptDocument? = runCatching { parse(JSONObject(file(id).readText())) }.getOrNull()
@@ -137,15 +142,26 @@ class ScriptRepository(context: Context, private val settings: Settings) {
                 (0 until em.length() / 2).map { k -> em.getInt(2 * k)..em.getInt(2 * k + 1) },
             )
         }
-        val warnings = o.optJSONArray("warnings")?.let { w -> (0 until w.length()).map { w.getString(it) } } ?: emptyList()
-        return ScriptDocument(o.optString("title", "Сценарий"), o.optString("format", "?"), paragraphs, warnings)
+        // Unknown codes (saved by a newer version) are skipped; before 0.4 warnings were saved as Russian sentences.
+        val warnings = o.optJSONArray(KEY_WARNING_CODES)?.strings()?.mapNotNull { ImportWarning.fromCode(it) }
+            ?: o.optJSONArray("warnings")?.strings()?.map { ImportWarning.fromLegacyText(it) }
+            ?: emptyList()
+        return ScriptDocument(
+            o.optString("title", appContext.getString(R.string.common_untitled)),
+            formatCode(o.optString("format", "?")),
+            paragraphs,
+            warnings,
+        )
     }
+
+    private fun JSONArray.strings(): List<String> = (0 until length()).map { getString(it) }
 
     private fun loadAllMeta(): List<Meta> = (dir.listFiles { f -> f.extension == "json" } ?: emptyArray())
         .mapNotNull { f ->
             runCatching {
                 val o = JSONObject(f.readText())
-                Meta(f.nameWithoutExtension, o.optString("title"), o.optString("format"), o.optInt("words"), o.optLong("updatedAt"))
+                val format = formatCode(o.optString("format"))
+                Meta(f.nameWithoutExtension, o.optString("title"), format, o.optInt("words"), o.optLong("updatedAt"))
             }.getOrNull()
         }
         .sortedByDescending { it.updatedAt }
@@ -154,34 +170,30 @@ class ScriptRepository(context: Context, private val settings: Settings) {
         if (!legacyFile.exists()) return
         runCatching {
             val doc = parse(JSONObject(legacyFile.readText()))
-            if (!doc.isEmpty && doc.title != "Пример") {
+            if (!doc.isEmpty && doc.title != LEGACY_SAMPLE_TITLE) {
                 write(UUID.randomUUID().toString().substring(0, 8), doc, System.currentTimeMillis())
             }
         }
         legacyFile.delete()
     }
 
+    /** Created in the UI language of the moment and saved like any script: it doesn't change with the language later. */
+    private fun sample(): ScriptDocument = MarkdownImporter.parse(
+        appContext.getString(R.string.sample_script),
+        appContext.getString(R.string.sample_title),
+    ).copy(format = ScriptDocument.FORMAT_SAMPLE)
+
     companion object {
-        fun sample() = ScriptDocument(
-            "Пример",
-            "встроенный",
-            listOf(
-                Paragraph("Пример сценария", Paragraph.Kind.HEADING),
-                Paragraph(
-                    "Привет! Сегодня я покажу, как суфлёр следит за голосом и сам прокручивает текст, " +
-                        "чтобы не приходилось за ним бегать.",
-                ),
-                Paragraph(
-                    "Прочитай пару строк, посмотри в камеру, потом снова загляни в текст. " +
-                        "Если собьёшься и начнёшь фразу заново, текст вернётся к её началу.",
-                    emphasis = listOf(0..22),
-                ),
-                Paragraph("[Пауза, улыбка] А если замолчишь, текст просто подождёт тебя."),
-                Paragraph(
-                    "Попробуй прочитать этот абзац поверх Instagram, TikTok или камеры — " +
-                        "суфлёр будет слышать тебя и во время записи.",
-                ),
-            ),
-        )
+        private const val KEY_WARNING_CODES = "warningCodes"
+
+        /** The sample of the single-script storage (script.json) had this title and is not carried over. Data, not UI text. */
+        private const val LEGACY_SAMPLE_TITLE = "Пример"
+
+        /** Before 0.4 typed and built-in scripts saved Russian names instead of format codes. */
+        private fun formatCode(saved: String): String = when (saved) {
+            "Текст" -> ScriptDocument.FORMAT_TEXT
+            "встроенный" -> ScriptDocument.FORMAT_SAMPLE
+            else -> saved
+        }
     }
 }
