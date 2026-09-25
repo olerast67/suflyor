@@ -95,7 +95,10 @@ class MainActivity : ComponentActivity() {
         }
         readiness = Readiness.check(this)
         setContent { SuflyorTheme { Root() } }
-        if (savedInstanceState == null) handleIncoming(intent)
+        if (savedInstanceState == null) {
+            handleIncoming(intent)
+            openScreenForScreenshot(intent)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -153,6 +156,27 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIncoming(intent)
+        openScreenForScreenshot(intent)
+    }
+
+    /**
+     * Debug builds only: tools/capture-screenshots.ps1 opens a screen directly. Tapping through the UI with
+     * uiautomator doesn't work, because every uiautomator dump rebinds the accessibility service and the layout jumps.
+     */
+    private fun openScreenForScreenshot(intent: Intent?) {
+        if (!BuildConfig.DEBUG) return
+        val which = intent?.getStringExtra(EXTRA_SCREENSHOT_SCREEN) ?: return
+        val id = app.scripts.currentId ?: app.scripts.items.firstOrNull()?.id ?: return
+        backStack.clear()
+        backStack.add(Screen.Library)
+        when (which) {
+            "script" -> openScript(id)
+            "editor" -> {
+                openScript(id)
+                backStack.add(Screen.Editor(id))
+            }
+            "settings" -> backStack.add(Screen.Settings)
+        }
     }
 
     /** While a remote button is being assigned in Settings, the next key press goes there. */
@@ -407,6 +431,7 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val KEY_BACK_STACK = "backStack"
+        private const val EXTRA_SCREENSHOT_SCREEN = "screenshot_screen"
 
         /** PDF is offered in the picker only where the platform can extract its text. */
         private val MIME_TYPES: Array<String>

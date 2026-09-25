@@ -25,12 +25,6 @@ New-Item -ItemType Directory -Force $store | Out-Null
 $tmp = Join-Path ([IO.Path]::GetTempPath()) 'suflyor-shots'
 New-Item -ItemType Directory -Force $tmp | Out-Null
 
-# What the script taps, as the app shows it in each language.
-$labels = @{
-    en = @{ Sample = 'Sample'; Edit = 'Edit'; Settings = 'Settings' }
-    ru = @{ Sample = 'Пример'; Edit = 'Редактировать'; Settings = 'Настройки' }
-}[$Locale]
-
 # adb writes progress ("1 file pulled") to stderr; Windows PowerShell 5.1 would turn that into a terminating error
 # under ErrorActionPreference=Stop, so stderr is collected here and only the exit code decides.
 function Adb {
@@ -67,18 +61,11 @@ function Save-Screen([string]$name) {
     Write-Host "saved $Locale/$name.png"
 }
 
-# Taps the first element whose text or description matches. uiautomator dumps rebind enabled accessibility
-# services; that is harmless here because no prompter session runs while the screenshots are taken.
-function Tap([string]$label) {
-    Adb shell uiautomator dump /sdcard/suflyor-ui.xml | Out-Null
-    $xml = Join-Path $tmp 'ui.xml'
-    Adb pull /sdcard/suflyor-ui.xml $xml | Out-Null
-    Adb shell rm /sdcard/suflyor-ui.xml
-    [xml]$ui = Get-Content $xml -Encoding UTF8
-    $node = $ui.SelectNodes('//node') | Where-Object { $_.text -eq $label -or $_.'content-desc' -eq $label } | Select-Object -First 1
-    if (-not $node) { throw "No '$label' on the screen" }
-    $b = [regex]::Matches($node.bounds, '\d+') | ForEach-Object { [int]$_.Value }
-    Adb shell input tap ([int](($b[0] + $b[2]) / 2)) ([int](($b[1] + $b[3]) / 2))
+# The debug build opens a screen from an intent extra. Tapping through the UI doesn't work: every uiautomator dump
+# rebinds the accessibility service, the setup banner comes and goes, and the layout jumps under the tap.
+function Open-Screen([string]$name) {
+    Adb shell am start -W -n "$package/com.olerast.suflyor.MainActivity" --es screenshot_screen $name | Out-Null
+    Start-Sleep -Milliseconds 1200
 }
 
 # A locked or sleeping phone would give pictures of the lock screen.
@@ -130,16 +117,12 @@ Adb shell run-as $package rm -rf files/scripts files/script.json shared_prefs | 
 Restart-App
 
 Save-Screen '1-library'
-Tap $labels.Sample
+Open-Screen 'script'
 Save-Screen '2-script'
-Tap $labels.Edit
+Open-Screen 'editor'
 Save-Screen '3-editor'
-# Editor -> script -> library.
-Adb shell input keyevent KEYCODE_BACK | Out-Null
-Start-Sleep -Milliseconds 700
-Adb shell input keyevent KEYCODE_BACK | Out-Null
-Start-Sleep -Milliseconds 700
+Open-Screen 'settings'
 Assert-Unlocked
-Tap $labels.Settings
 Save-Screen '4-settings'
+Open-Screen 'library'
 Write-Host "Done. Pictures are in $out; run: python docs\tools\render_screens.py $Locale"
