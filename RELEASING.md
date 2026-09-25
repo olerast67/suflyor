@@ -4,7 +4,7 @@ How the maintainer publishes Suflyor. Users don't need any of this.
 
 ## One-time setup
 
-1. **Back up the signing key.** The key is `suflyor-release.jks` plus `keystore.properties` with its passwords, stored outside the repository (`F:\telepromter-keys\`). Keep two copies away from this computer: a password manager and an offline drive. **If the key is lost, installed apps can never be updated**. Users would have to uninstall and lose their scripts. The same key is needed for Google developer verification.
+1. **Back up the signing key.** The key is `suflyor-release.jks` plus `keystore.properties` with its passwords, stored outside the repository, in a separate folder on your computer. Keep two copies away from this computer: a password manager and an offline drive. **If the key is lost, installed apps can never be updated**. Users would have to uninstall and lose their scripts. The same key is needed for Google developer verification.
 2. **Hide your email in commits.** In GitHub → Settings → Emails, turn on *Keep my email addresses private* and copy the `…@users.noreply.github.com` address. Then run:
    ```bash
    git config user.email "ID+USERNAME@users.noreply.github.com"
