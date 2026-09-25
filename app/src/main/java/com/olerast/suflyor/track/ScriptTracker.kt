@@ -1,6 +1,6 @@
 package com.olerast.suflyor.track
 
-import com.olerast.suflyor.script.TextNorm
+import com.olerast.suflyor.script.SpeechLang
 import com.olerast.suflyor.script.Token
 import kotlin.math.abs
 
@@ -18,8 +18,11 @@ import kotlin.math.abs
  *   evidence and a clear lead over every other place in the script, and the same verdict on the next update unless
  *   the evidence reaches [JUMP_SURE_EVIDENCE].
  * Silence or off-script talk leaves the position where it is.
+ *
+ * [lang] must be the language the tokens were built for (ScriptModel.lang) and the hypothesis normalized with
+ * (SpeechLang.words): it decides fillers, word similarity and forms, and how recognized words are prepared.
  */
-class ScriptTracker(tokens: List<Token>) {
+class ScriptTracker(tokens: List<Token>, private val lang: SpeechLang = SpeechLang.RU) {
     /** Indices (in the full token list) of words expected to be spoken. */
     private val spokenIdx: IntArray = tokens.indices.filter { tokens[it].spoken }.toIntArray()
     private val words: Array<String> = Array(spokenIdx.size) { tokens[spokenIdx[it]].norm }
@@ -44,7 +47,12 @@ class ScriptTracker(tokens: List<Token>) {
     /** Distinct script words: similarity is computed once per (heard word, distinct script word). */
     private val vocabId: IntArray
     private val vocab: Array<String>
+    private val vocabSet: Set<String>
     private val simCache = HashMap<String, FloatArray>()
+
+    /** The script writes numbers in digits, so numbers said as words are not script words (SpeechLang.prepareHypothesis). */
+    private val scriptHasDigits = words.any { it.isNotEmpty() && it[0].isDigit() }
+    private val strictGaps = lang.strictGapRuns
 
     // DP rows, allocated once: only rows i-1 and i are live, plus a copy of row m-1 for candidate extraction.
     private val rowA = Row(words.size + 1)
@@ -52,7 +60,7 @@ class ScriptTracker(tokens: List<Token>) {
     private val rowPrevLast = Row(words.size + 1)
 
     init {
-        val stems = words.map { stem(it) }
+        val stems = words.map { lang.stem(it) }
         val df = stems.groupingBy { it }.eachCount()
         weights = FloatArray(words.size) { j ->
             val base = tokens[spokenIdx[j]].weight
@@ -64,6 +72,7 @@ class ScriptTracker(tokens: List<Token>) {
         val ids = HashMap<String, Int>()
         vocabId = IntArray(words.size) { j -> ids.getOrPut(words[j]) { ids.size } }
         vocab = Array(ids.size) { "" }.also { v -> ids.forEach { (word, id) -> v[id] = word } }
+        vocabSet = ids.keys
     }
 
     val size: Int get() = words.size
@@ -105,7 +114,8 @@ class ScriptTracker(tokens: List<Token>) {
 
     /** @param hypothesis normalized recognized words, oldest first (finalized history + current partial). */
     fun onHypothesis(hypothesis: List<String>): Update {
-        val hyp = hypothesis.filter { it.isNotEmpty() && it !in TextNorm.FILLERS }.takeLast(TAIL)
+        val heard = hypothesis.filter { it.isNotEmpty() && it !in lang.fillers }
+        val hyp = lang.prepareHypothesis(heard, vocabSet, scriptHasDigits).takeLast(TAIL)
         if (hyp.isEmpty() || hyp == lastHyp || size == 0) return noMove("no new words")
         lastHyp = hyp
 
@@ -206,7 +216,8 @@ class ScriptTracker(tokens: List<Token>) {
         val w = size
         // Similarity rows per heard word, kept while the word stays in the tail.
         simCache.keys.retainAll(hyp.toSet())
-        val sims = Array(m) { i -> simCache.getOrPut(hyp[i]) { FloatArray(vocab.size) { v -> TextNorm.similarity(hyp[i], vocab[v]) } } }
+        val sims = Array(m) { i -> simCache.getOrPut(hyp[i]) { FloatArray(vocab.size) { v -> lang.similarity(hyp[i], vocab[v]) } } }
+        val lastMayBePrefix = lang.canBePrefix(hyp[m - 1])
         var prev = rowA
         var cur = rowB
         prev.clear()
@@ -229,7 +240,7 @@ class ScriptTracker(tokens: List<Token>) {
                 var isMatch = sim >= MATCH_SIM
                 var isStrong = isMatch
                 // The recognizer's last word is often still being spoken ("вз" of "взгляни"): a prefix counts, weakly.
-                if (!isMatch && i == m && isSpokenPrefix(word, words[sj])) {
+                if (!isMatch && i == m && lastMayBePrefix && isSpokenPrefix(word, words[sj])) {
                     isMatch = true
                     isStrong = false
                     sim = PREFIX_SIM
@@ -264,6 +275,9 @@ class ScriptTracker(tokens: List<Token>) {
                         hg = prev.hypGap[j - 1] + 1
                     }
                 }
+                // An extra heard word ends a run of skipped script words and vice versa, unless runs are strict
+                // (English): then both runs last until the next match, so a path can't cross "in twenty twenty
+                // five" by alternating the two kinds of gap.
                 if (up > best) {
                     best = up
                     s = prev.strong[j]
@@ -271,7 +285,7 @@ class ScriptTracker(tokens: List<Token>) {
                     matched = false
                     pre = false
                     st = prev.start[j]
-                    sg = 0
+                    sg = if (strictGaps) prev.scriptGap[j] else 0
                     hg = prev.hypGap[j] + 1
                 }
                 if (left > best) {
@@ -281,7 +295,7 @@ class ScriptTracker(tokens: List<Token>) {
                     matched = false
                     pre = false
                     st = cur.start[j - 1]
-                    hg = 0
+                    hg = if (strictGaps) cur.hypGap[j - 1] else 0
                     sg = cur.scriptGap[j - 1] + 1
                 }
                 cur.h[j] = best
@@ -408,7 +422,7 @@ class ScriptTracker(tokens: List<Token>) {
         /** At most this many script words skipped (or extra words heard) in a row inside one path. */
         const val MAX_GAP = 2
 
-        /** Word forms of one Russian word usually share the first five letters. */
-        fun stem(w: String): String = if (w.length > 5) w.substring(0, 5) else w
+        /** Word forms of one Russian word usually share the first five letters. Other languages: [SpeechLang.stem]. */
+        fun stem(w: String): String = SpeechLang.RU.stem(w)
     }
 }
