@@ -11,6 +11,7 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import com.olerast.suflyor.MainActivity
+import com.olerast.suflyor.R
 import com.olerast.suflyor.diag.DiagLog
 import com.olerast.suflyor.overlay.OverlayHost
 
@@ -26,7 +27,10 @@ class SessionService : Service() {
             return START_NOT_STICKY
         }
         val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL, "Суфлёр работает", NotificationManager.IMPORTANCE_LOW))
+        // Re-created on every start with the same id: this also renames the channel after a language change.
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL, getString(R.string.notification_channel_session), NotificationManager.IMPORTANCE_LOW),
+        )
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
@@ -34,11 +38,11 @@ class SessionService : Service() {
             this, 1, Intent(this, SessionService::class.java).setAction(ACTION_STOP), PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = Notification.Builder(this, CHANNEL)
-            .setSmallIcon(com.olerast.suflyor.R.drawable.ic_mic)
-            .setContentTitle("Суфлёр слушает")
-            .setContentText("Окно поверх приложений включено")
+            .setSmallIcon(R.drawable.ic_mic)
+            .setContentTitle(getString(R.string.notification_session_title))
+            .setContentText(getString(R.string.notification_session_text))
             .setContentIntent(open)
-            .addAction(Notification.Action.Builder(null, "Остановить", stop).build())
+            .addAction(Notification.Action.Builder(null, getString(R.string.notification_action_stop), stop).build())
             .setOngoing(true)
             .build()
         try {
@@ -49,7 +53,7 @@ class SessionService : Service() {
             }
             foreground = true
         } catch (e: Exception) {
-            DiagLog.e("Не удалось запустить foreground-сервис микрофона", e)
+            DiagLog.e("Couldn't start the microphone foreground service", e)
             stopSelf()
             return START_NOT_STICKY
         }

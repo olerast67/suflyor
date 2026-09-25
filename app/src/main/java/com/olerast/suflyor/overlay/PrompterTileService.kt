@@ -15,10 +15,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import com.olerast.suflyor.App
 import com.olerast.suflyor.MainActivity
+import com.olerast.suflyor.R
 import com.olerast.suflyor.session.SessionEngine
 
 /**
- * Quick Settings tile: pull down the shade, tap "Суфлёр", and the floating prompter with the current script appears
+ * Quick Settings tile: pull down the shade, tap "Suflyor", and the floating prompter with the current script appears
  * over whatever app is open. Tap again to stop.
  */
 class PrompterTileService : TileService() {
@@ -48,8 +49,8 @@ class PrompterTileService : TileService() {
         val app = App.instance
         val running = app.engine.state.mode == SessionEngine.Mode.OVERLAY
         tile.state = if (running) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        tile.label = "Суфлёр"
-        if (Build.VERSION.SDK_INT >= 29) tile.subtitle = if (running) "слушает" else app.scripts.document.title
+        tile.label = getString(R.string.tile_label)
+        if (Build.VERSION.SDK_INT >= 29) tile.subtitle = if (running) getString(R.string.tile_subtitle_listening) else app.scripts.document.title
         tile.updateTile()
     }
 

@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Display
 import android.view.Gravity
@@ -25,6 +26,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.StringRes
 import com.olerast.suflyor.App
 import com.olerast.suflyor.R
 import com.olerast.suflyor.diag.DiagLog
@@ -130,11 +132,13 @@ class OverlayController(private val context: Context, private val windowType: In
             setTextColor(Color.argb(200, 255, 255, 255))
             textSize = 11f
             maxLines = 1
+            // Shares the row with eight buttons: on narrow phones only ~40dp are left for it.
+            ellipsize = TextUtils.TruncateAt.END
             setPadding(dp(6), 0, dp(4), 0)
         }
         level = LevelBar(context)
-        pauseBtn = icon(R.drawable.ic_pause, "Пауза") { app.engine.togglePause() }
-        modeBtn = icon(R.drawable.ic_mic, "Голос или скорость") {
+        pauseBtn = icon(R.drawable.ic_pause, R.string.common_cd_pause) { app.engine.togglePause() }
+        modeBtn = icon(R.drawable.ic_mic, R.string.common_cd_scroll_mode) {
             val s = app.engine.state
             app.engine.setScroll(if (s.scroll == SessionEngine.Scroll.VOICE) SessionEngine.Scroll.AUTO else SessionEngine.Scroll.VOICE)
         }
@@ -154,14 +158,14 @@ class OverlayController(private val context: Context, private val windowType: In
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(14), 0, dp(6), 0)
             addView(status, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(icon(R.drawable.ic_up, "Строка назад") { app.engine.stepLine(-1) })
+            addView(icon(R.drawable.ic_up, R.string.common_cd_line_back) { app.engine.stepLine(-1) })
             addView(pauseBtn)
-            addView(icon(R.drawable.ic_down, "Строка вперёд") { app.engine.stepLine(1) })
+            addView(icon(R.drawable.ic_down, R.string.common_cd_line_forward) { app.engine.stepLine(1) })
             addView(modeBtn)
-            addView(textButton("A−") { changeFont(-2) })
-            addView(textButton("A+") { changeFont(2) })
-            addView(icon(R.drawable.ic_lock, "Закрепить: нажатия пойдут в камеру") { setLocked(true) })
-            addView(icon(R.drawable.ic_close, "Закрыть") { OverlayHost.stopSession(context) })
+            addView(textButton("A−", R.string.overlay_cd_font_smaller) { changeFont(-2) })
+            addView(textButton("A+", R.string.overlay_cd_font_larger) { changeFont(2) })
+            addView(icon(R.drawable.ic_lock, R.string.overlay_cd_lock) { setLocked(true) })
+            addView(icon(R.drawable.ic_close, R.string.overlay_cd_close) { OverlayHost.stopSession(context) })
         }
         diag = TextView(context).apply {
             setTextColor(Color.argb(190, 170, 240, 190))
@@ -289,16 +293,16 @@ class OverlayController(private val context: Context, private val windowType: In
         val next = computePlacement()
         if (next == placement) return
         placement = next
-        DiagLog.i("Окно: ${describe(next)}")
+        DiagLog.i("Window: ${describe(next)}")
         applyPlacement()
         wm.updateViewLayout(root, params)
         if (locked) positionBubble()
     }
 
     private fun describe(p: Placement) = when (p) {
-        Placement.PORTRAIT -> "вертикально, текст под камерой"
-        Placement.TURNED_LEFT, Placement.TURNED_RIGHT -> "телефон горизонтально, экран камеры вертикальный — текст повёрнут к объективу"
-        Placement.SIDE_LEFT, Placement.SIDE_RIGHT -> "экран горизонтальный — окно у объектива"
+        Placement.PORTRAIT -> "portrait, text under the camera"
+        Placement.TURNED_LEFT, Placement.TURNED_RIGHT -> "phone sideways, camera screen portrait — text turned toward the lens"
+        Placement.SIDE_LEFT, Placement.SIDE_RIGHT -> "landscape screen — window next to the lens"
     }
 
     /** Window size and position, content rotation, paddings that keep text clear of the camera cut-out. */
@@ -417,7 +421,7 @@ class OverlayController(private val context: Context, private val windowType: In
         if (windowType == WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY) params.alpha = if (value) 0.8f else 1f
         wm.updateViewLayout(root, params)
         if (value) showBubble() else hideBubble()
-        DiagLog.i(if (value) "Окно закреплено: нажатия проходят в приложение камеры" else "Окно снова принимает нажатия")
+        DiagLog.i(if (value) "Window locked: touches pass to the camera app" else "Window accepts touches again")
     }
 
     private fun showBubble() {
@@ -432,7 +436,7 @@ class OverlayController(private val context: Context, private val windowType: In
             addView(ImageView(context).apply {
                 setImageResource(R.drawable.ic_lock_open)
                 imageTintList = ColorStateList.valueOf(PrompterView.ACCENT)
-                contentDescription = "Открепить окно"
+                contentDescription = context.getString(R.string.overlay_cd_unlock)
             }, FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
             setOnClickListener { setLocked(false) }
         }
@@ -502,24 +506,25 @@ class OverlayController(private val context: Context, private val windowType: In
         val muted = s.silencedBySystem == true || s.digitalSilence
         level.setLevel(s.levelDb, muted)
         pauseBtn.setImageResource(if (s.paused) R.drawable.ic_play else R.drawable.ic_pause)
+        pauseBtn.contentDescription = context.getString(if (s.paused) R.string.common_cd_resume else R.string.common_cd_pause)
         modeBtn.setImageResource(if (s.scroll == SessionEngine.Scroll.VOICE) R.drawable.ic_mic else R.drawable.ic_speed)
         val (color, label) = when {
-            s.starting -> Color.GRAY to "запуск…"
-            !s.listening -> Color.GRAY to "стоп"
-            s.paused -> PrompterView.ACCENT to "пауза"
-            s.scroll == SessionEngine.Scroll.AUTO -> PrompterView.ACCENT to "по скорости"
-            s.silencedBySystem == true -> Color.rgb(255, 80, 80) to "микрофон занят"
-            s.autoFallback -> Color.rgb(255, 80, 80) to "не слышу"
-            else -> Color.rgb(70, 215, 120) to "слушаю"
+            s.starting -> Color.GRAY to R.string.overlay_status_starting
+            !s.listening -> Color.GRAY to R.string.overlay_status_stopped
+            s.paused -> PrompterView.ACCENT to R.string.overlay_status_paused
+            s.scroll == SessionEngine.Scroll.AUTO -> PrompterView.ACCENT to R.string.overlay_status_auto
+            s.silencedBySystem == true -> Color.rgb(255, 80, 80) to R.string.overlay_status_mic_busy
+            s.autoFallback -> Color.rgb(255, 80, 80) to R.string.overlay_status_cant_hear
+            else -> Color.rgb(70, 215, 120) to R.string.overlay_status_listening
         }
         (statusDot.background as GradientDrawable).setColor(color)
-        statusText.text = label
+        statusText.text = context.getString(label)
         if (diag.visibility == View.VISIBLE) {
             val others = s.recordings.filter { !it.ours }
             diag.text = buildString {
                 append(s.partial.ifEmpty { s.lastFinal }.takeLast(70))
                 if (others.isNotEmpty()) append("\n").append(others.joinToString("; ") { it.describe() })
-                s.error?.let { append("\n⚠ ").append(it) }
+                s.error?.let { append("\n⚠ ").append(it.message(context)) }
             }
         }
     }
@@ -543,18 +548,19 @@ class OverlayController(private val context: Context, private val windowType: In
         d
     }
 
-    private fun icon(res: Int, description: String, onClick: () -> Unit) = ImageView(context).apply {
+    private fun icon(res: Int, @StringRes description: Int, onClick: () -> Unit) = ImageView(context).apply {
         setImageResource(res)
         imageTintList = ColorStateList.valueOf(Color.WHITE)
-        contentDescription = description
+        contentDescription = context.getString(description)
         scaleType = ImageView.ScaleType.CENTER
         background = ripple()
         layoutParams = LinearLayout.LayoutParams(dp(38), dp(40))
         setOnClickListener { onClick() }
     }
 
-    private fun textButton(label: String, onClick: () -> Unit) = TextView(context).apply {
+    private fun textButton(label: String, @StringRes description: Int, onClick: () -> Unit) = TextView(context).apply {
         text = label
+        contentDescription = context.getString(description)
         setTextColor(Color.WHITE)
         textSize = 14f
         typeface = Typeface.DEFAULT_BOLD

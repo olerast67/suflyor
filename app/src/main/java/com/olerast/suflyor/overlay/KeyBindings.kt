@@ -1,7 +1,9 @@
 package com.olerast.suflyor.overlay
 
+import android.content.Context
 import android.view.KeyEvent
 import androidx.annotation.StringRes
+import com.olerast.suflyor.App
 import com.olerast.suflyor.R
 import com.olerast.suflyor.session.SessionEngine
 
@@ -59,10 +61,11 @@ object KeyBindings {
 
     fun isVolume(code: Int) = code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN
 
-    fun keyName(code: Int): String = when (code) {
-        KeyEvent.KEYCODE_VOLUME_UP -> "Громкость +"
-        KeyEvent.KEYCODE_VOLUME_DOWN -> "Громкость −"
-        KeyEvent.KEYCODE_SPACE -> "Пробел"
+    /** Names that are words get translated; labels printed on keys (Enter, Page Up, arrows, Play) stay as they are. */
+    fun keyName(context: Context, code: Int): String = when (code) {
+        KeyEvent.KEYCODE_VOLUME_UP -> context.getString(R.string.key_name_volume_up)
+        KeyEvent.KEYCODE_VOLUME_DOWN -> context.getString(R.string.key_name_volume_down)
+        KeyEvent.KEYCODE_SPACE -> context.getString(R.string.key_name_space)
         KeyEvent.KEYCODE_ENTER -> "Enter"
         KeyEvent.KEYCODE_PAGE_UP -> "Page Up"
         KeyEvent.KEYCODE_PAGE_DOWN -> "Page Down"
@@ -70,13 +73,16 @@ object KeyBindings {
         KeyEvent.KEYCODE_DPAD_DOWN -> "↓"
         KeyEvent.KEYCODE_DPAD_LEFT -> "←"
         KeyEvent.KEYCODE_DPAD_RIGHT -> "→"
-        KeyEvent.KEYCODE_DPAD_CENTER -> "Центр"
+        KeyEvent.KEYCODE_DPAD_CENTER -> context.getString(R.string.key_name_dpad_center)
         KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> "Play/Pause"
         KeyEvent.KEYCODE_MEDIA_PLAY -> "Play"
         KeyEvent.KEYCODE_MEDIA_PAUSE -> "Pause"
-        KeyEvent.KEYCODE_MEDIA_NEXT -> "Следующий трек"
-        KeyEvent.KEYCODE_MEDIA_PREVIOUS -> "Предыдущий трек"
-        KeyEvent.KEYCODE_HEADSETHOOK -> "Кнопка гарнитуры"
+        KeyEvent.KEYCODE_MEDIA_NEXT -> context.getString(R.string.key_name_next_track)
+        KeyEvent.KEYCODE_MEDIA_PREVIOUS -> context.getString(R.string.key_name_previous_track)
+        KeyEvent.KEYCODE_HEADSETHOOK -> context.getString(R.string.key_name_headset)
         else -> KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
     }
+
+    /** [keyName] with the app's resources, which follow the app language too (per-app language applies process-wide). */
+    fun keyName(code: Int): String = keyName(App.instance, code)
 }

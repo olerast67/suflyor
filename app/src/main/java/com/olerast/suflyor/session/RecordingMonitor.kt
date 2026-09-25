@@ -26,10 +26,11 @@ class RecordingMonitor(
         val channels: Int,
         val device: String?,
     ) {
+        /** English in every UI language: goes to the journal and the window's diagnostics line. */
         fun describe(): String {
-            val who = if (ours) "мы" else "другое приложение"
-            val mute = if (silenced) "ЗАГЛУШЕНО" else "слышит"
-            return "$who: ${AudioCapture.sourceName(source)}, $sampleRate Гц, ${channels}ch, $mute" +
+            val who = if (ours) "us" else "other app"
+            val mute = if (silenced) "SILENCED" else "hears"
+            return "$who: ${AudioCapture.sourceName(source)}, $sampleRate Hz, ${channels}ch, $mute" +
                 (device?.let { ", $it" } ?: "")
         }
     }
@@ -73,12 +74,12 @@ class RecordingMonitor(
 
     private fun deviceName(d: AudioDeviceInfo): String {
         val type = when (d.type) {
-            AudioDeviceInfo.TYPE_BUILTIN_MIC -> "встроенный микрофон"
-            AudioDeviceInfo.TYPE_WIRED_HEADSET -> "проводная гарнитура"
+            AudioDeviceInfo.TYPE_BUILTIN_MIC -> "built-in mic"
+            AudioDeviceInfo.TYPE_WIRED_HEADSET -> "wired headset"
             AudioDeviceInfo.TYPE_USB_DEVICE, AudioDeviceInfo.TYPE_USB_HEADSET -> "USB"
             AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth SCO"
             AudioDeviceInfo.TYPE_BLE_HEADSET -> "Bluetooth LE"
-            else -> "тип ${d.type}"
+            else -> "type ${d.type}"
         }
         val name = d.productName?.toString()?.takeIf { it.isNotBlank() }
         return if (name != null) "$type ($name)" else type

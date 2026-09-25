@@ -1,13 +1,52 @@
 package com.olerast.suflyor.speech
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Process
+import com.olerast.suflyor.R
 import kotlin.math.log10
 import kotlin.math.sqrt
+
+/** Why the microphone could not be opened or stopped delivering audio. toString() is the English journal text. */
+sealed interface CaptureError {
+    data class RateUnsupported(val hz: Int) : CaptureError {
+        override fun toString() = "The microphone doesn't support $hz Hz"
+    }
+
+    data class CreateFailed(val detail: String) : CaptureError {
+        override fun toString() = "AudioRecord not created: $detail"
+    }
+
+    data object NotInitialized : CaptureError {
+        override fun toString() = "AudioRecord not initialized (no microphone permission?)"
+    }
+
+    data class StartFailed(val detail: String) : CaptureError {
+        override fun toString() = "Couldn't start recording: $detail"
+    }
+
+    data object MicBusy : CaptureError {
+        override fun toString() = "Android wouldn't start recording: another app is using the microphone"
+    }
+
+    data class ReadFailed(val code: Int) : CaptureError {
+        override fun toString() = "Microphone read error: $code"
+    }
+
+    /** What the user sees (the window's diagnostics line). */
+    fun message(context: Context): String = when (this) {
+        is RateUnsupported -> context.getString(R.string.session_error_rate_unsupported, hz)
+        is CreateFailed -> context.getString(R.string.session_error_recorder_create, detail)
+        NotInitialized -> context.getString(R.string.session_error_recorder_init)
+        is StartFailed -> context.getString(R.string.session_error_record_start, detail)
+        MicBusy -> context.getString(R.string.session_error_mic_busy)
+        is ReadFailed -> context.getString(R.string.session_error_mic_read, code)
+    }
+}
 
 /**
  * Microphone capture on its own thread. Never uses CAMCORDER / VOICE_COMMUNICATION and never marks the capture
@@ -21,7 +60,7 @@ class AudioCapture(
     interface Listener {
         /** Called on the capture thread with ~100 ms of mono audio in [-1, 1]. */
         fun onAudio(samples: FloatArray, sampleRate: Int, rmsDb: Float, digitalSilence: Boolean)
-        fun onCaptureError(message: String)
+        fun onCaptureError(error: CaptureError)
     }
 
     @Volatile
@@ -36,10 +75,11 @@ class AudioCapture(
         get() = runCatching { record?.activeRecordingConfiguration?.isClientSilenced }.getOrNull()
 
     @SuppressLint("MissingPermission")
-    fun start(): String? {
+    /** @return null when recording has started, otherwise why it could not. */
+    fun start(): CaptureError? {
         require(source != MediaRecorder.AudioSource.CAMCORDER && source != MediaRecorder.AudioSource.VOICE_COMMUNICATION)
         val minBuf = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-        if (minBuf <= 0) return "Частота $sampleRate Гц не поддерживается микрофоном"
+        if (minBuf <= 0) return CaptureError.RateUnsupported(sampleRate)
         val format = AudioFormat.Builder()
             .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
             .setSampleRate(sampleRate)
@@ -53,21 +93,21 @@ class AudioCapture(
         val rec = try {
             builder.build()
         } catch (e: Exception) {
-            return "AudioRecord не создан: ${e.message}"
+            return CaptureError.CreateFailed(e.message ?: e.javaClass.simpleName)
         }
         if (rec.state != AudioRecord.STATE_INITIALIZED) {
             rec.release()
-            return "AudioRecord не инициализирован (нет разрешения на микрофон?)"
+            return CaptureError.NotInitialized
         }
         try {
             rec.startRecording()
         } catch (e: IllegalStateException) {
             rec.release()
-            return "Не удалось начать запись: ${e.message}"
+            return CaptureError.StartFailed(e.message ?: e.javaClass.simpleName)
         }
         if (rec.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
             rec.release()
-            return "Система не дала начать запись — микрофон занят другим приложением"
+            return CaptureError.MicBusy
         }
         record = rec
         running = true
@@ -82,7 +122,7 @@ class AudioCapture(
         while (running) {
             val n = rec.read(shorts, 0, chunk)
             if (n < 0) {
-                if (running) listener.onCaptureError("Ошибка чтения микрофона: $n")
+                if (running) listener.onCaptureError(CaptureError.ReadFailed(n))
                 break
             }
             if (n == 0) continue
