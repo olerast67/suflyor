@@ -9,7 +9,8 @@ import com.olerast.suflyor.R
 import com.olerast.suflyor.diag.DiagLog
 import com.olerast.suflyor.overlay.PrompterAccessibilityService
 import com.olerast.suflyor.script.ScriptModel
-import com.olerast.suflyor.script.TextNorm
+import com.olerast.suflyor.script.SpeechLang
+import com.olerast.suflyor.script.biasWords
 import com.olerast.suflyor.speech.AsrEngine
 import com.olerast.suflyor.speech.AsrUpdate
 import com.olerast.suflyor.speech.AudioCapture
@@ -77,6 +78,10 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
     private var model: ScriptModel = ScriptModel.EMPTY
     private var tracker = ScriptTracker(emptyList())
 
+    /** Language of [model], readable from the audio thread without the lock. */
+    @Volatile
+    private var lang = SpeechLang.RU
+
     @Volatile
     private var asr: AsrEngine? = null
     private val asrLoadLock = Any()
@@ -132,18 +137,38 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
     // ---- script -------------------------------------------------------------------------------------------------
 
     fun setScript(m: ScriptModel) {
+        var stale: AsrEngine? = null
         synchronized(lock) {
             // Reset first, then bump the epoch: a result decoded before the reset carries the old epoch and is dropped.
             asr?.reset()
             epoch++
             model = m
-            tracker = ScriptTracker(m.tokens)
+            lang = m.lang
+            tracker = ScriptTracker(m.tokens, m.lang)
             finalWords.clear()
             partialWords = emptyList()
             displayPos = 0
+            // A script in the other language needs the other model; the audio thread sees no recognizer meanwhile.
+            asr?.takeIf { it.lang != m.lang }?.let {
+                stale = it
+                asr = null
+            }
         }
-        asr?.setBiasWords(biasWords(m))
+        val old = stale
+        if (old != null) swapRecognizer(old) else asr?.setBiasWords(m.biasWords())
         update { copy(nextToken = tracker.nextTokenIndex(), position = 0, total = tracker.size, partial = "", lastFinal = "") }
+    }
+
+    /** Frees the model of the old language first (they are large), then loads the new one if a session needs it. */
+    private fun swapRecognizer(old: AsrEngine) {
+        Thread({
+            old.release()
+            DiagLog.i("Recognizer released: ${old.lang.code}")
+            if (state.mode != Mode.IDLE) {
+                val error = ensureAsr()
+                if (error != null) update { copy(error = error) }
+            }
+        }, "asr-swap").start()
     }
 
     fun jumpToToken(tokenIndex: Int) = moveTracker { it.jumpToToken(tokenIndex) }
@@ -214,13 +239,6 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
         update { copy(position = pos, nextToken = next) }
     }
 
-    private fun biasWords(m: ScriptModel): List<String> = m.tokens.asSequence()
-        .filter { it.spoken && it.weight >= 1f }
-        .map { m.displayText.substring(it.start, it.end).lowercase() }
-        .distinct()
-        .take(2000)
-        .toList()
-
     // ---- session ------------------------------------------------------------------------------------------------
 
     fun start(mode: Mode) {
@@ -233,20 +251,38 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
         }, "asr-load").start()
     }
 
-    /** Loads the recognizer once; concurrent callers wait for the same load instead of failing. */
-    private fun ensureAsr(): SessionError? = synchronized(asrLoadLock) {
-        if (asr != null) return null
-        try {
-            val t0 = SystemClock.elapsedRealtime()
-            val engine = SherpaAsr.create(app)
-            engine.setBiasWords(biasWords(model))
-            asr = engine
-            val ms = SystemClock.elapsedRealtime() - t0
-            DiagLog.i("Recognizer loaded in $ms ms: ${engine.description}")
-            null
-        } catch (t: Throwable) {
-            DiagLog.e("Couldn't load the recognizer", t)
-            SessionError.AsrLoadFailed(t.message ?: t.javaClass.simpleName)
+    /**
+     * Loads the recognizer for the current script's language; concurrent callers wait for the same load instead of
+     * failing. If the script switches language during a load, the loaded model is dropped and the right one loaded.
+     */
+    private fun ensureAsr(): SessionError? = synchronized(asrLoadLock) { loadAsrLocked() }
+
+    private fun loadAsrLocked(): SessionError? {
+        while (true) {
+            val (want, bias) = synchronized(lock) { model.lang to model }
+            asr?.let { current ->
+                if (current.lang == want) return null
+                synchronized(lock) { if (asr === current) asr = null }
+                current.release()
+            }
+            try {
+                val t0 = SystemClock.elapsedRealtime()
+                val engine = SherpaAsr.create(app, want)
+                engine.setBiasWords(bias.biasWords())
+                val installed = synchronized(lock) {
+                    (model.lang == want).also { if (it) asr = engine }
+                }
+                if (!installed) {
+                    engine.release()
+                    continue
+                }
+                val ms = SystemClock.elapsedRealtime() - t0
+                DiagLog.i("Recognizer loaded in $ms ms: ${engine.description}")
+                return null
+            } catch (t: Throwable) {
+                DiagLog.e("Couldn't load the recognizer", t)
+                return SessionError.AsrLoadFailed(t.message ?: t.javaClass.simpleName)
+            }
         }
     }
 
@@ -357,7 +393,8 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
     }
 
     private fun onAsr(upd: AsrUpdate, fromEpoch: Int) {
-        val words = TextNorm.words(upd.text)
+        // A result in the old language after a script change is dropped by the epoch check below.
+        val words = lang.words(upd.text)
         var moved: ScriptTracker.Update? = null
         val pos: Int
         val next: Int

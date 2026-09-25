@@ -232,7 +232,7 @@ fun SettingsScreen(
                 s.volumeKeys = it
             }
             KeyAction.entries.forEach { action ->
-                val keys = bindings.filterValues { it == action }.keys.map { KeyBindings.keyName(it) }
+                val keys = bindings.filterValues { it == action }.keys.map { KeyBindings.keyName(context, it) }
                 val learning = KeyLearning.action == action
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -400,7 +400,7 @@ private fun requestAddTile(context: android.content.Context) {
     val sbm = context.getSystemService(StatusBarManager::class.java) ?: return
     sbm.requestAddTileService(
         ComponentName(context, PrompterTileService::class.java),
-        context.getString(R.string.settings_tile_label),
+        context.getString(R.string.tile_label),
         Icon.createWithResource(context, R.drawable.ic_layers),
         context.mainExecutor,
     ) { result ->

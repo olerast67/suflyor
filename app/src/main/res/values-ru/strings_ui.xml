@@ -90,7 +90,6 @@
     <string name="settings_tile_hint">Опусти шторку и нажми «Суфлёр» — окно с текущим сценарием появится поверх открытого приложения. Нажми ещё раз, чтобы остановить.</string>
     <string name="settings_tile_add">Добавить плитку в шторку</string>
     <string name="settings_tile_manual">Опусти шторку полностью → ✎ (изменить) → перетащи плитку «Суфлёр» наверх.</string>
-    <string name="settings_tile_label">Суфлёр</string>
     <string name="settings_tile_added">Плитка добавлена в шторку</string>
     <string name="settings_tile_already_added">Плитка уже в шторке</string>
 

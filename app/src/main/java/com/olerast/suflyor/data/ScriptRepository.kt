@@ -99,7 +99,7 @@ class ScriptRepository(context: Context, private val settings: Settings) {
 
     /** Rebuilds the layout of the current script after layout settings change and hands it to the engine. */
     fun relayout() {
-        model = ScriptLayout.build(document, settings.phraseMode, settings.maxWords)
+        model = ScriptLayout.build(document, settings.phraseMode, settings.maxWords, settings.speechLangFor(document))
         App.instance.engine.setScript(model)
         layoutVersion++
     }
@@ -107,7 +107,8 @@ class ScriptRepository(context: Context, private val settings: Settings) {
     private fun file(id: String) = File(dir, "$id.json")
 
     private fun write(id: String, doc: ScriptDocument, createdAt: Long) {
-        val words = ScriptLayout.build(doc, phraseMode = false).spokenTokens
+        // Counted with the speech language's rules: "don't" is one English word, not two.
+        val words = ScriptLayout.build(doc, phraseMode = false, lang = settings.speechLangFor(doc)).spokenTokens
         val json = JSONObject().apply {
             put("id", id)
             put("title", doc.title)

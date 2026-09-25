@@ -94,7 +94,6 @@
     <string name="settings_tile_add">Add tile to Quick Settings</string>
     <string name="settings_tile_manual">Pull the shade all the way down → ✎ (edit) → drag the “Suflyor” tile up.</string>
     <!-- Name of the tile in Android's "add tile" dialog. -->
-    <string name="settings_tile_label">Suflyor</string>
     <string name="settings_tile_added">Tile added to Quick Settings</string>
     <string name="settings_tile_already_added">The tile is already in Quick Settings</string>
 

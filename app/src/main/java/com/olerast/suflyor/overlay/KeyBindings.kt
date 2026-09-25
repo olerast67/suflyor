@@ -3,7 +3,6 @@ package com.olerast.suflyor.overlay
 import android.content.Context
 import android.view.KeyEvent
 import androidx.annotation.StringRes
-import com.olerast.suflyor.App
 import com.olerast.suflyor.R
 import com.olerast.suflyor.session.SessionEngine
 
@@ -82,7 +81,4 @@ object KeyBindings {
         KeyEvent.KEYCODE_HEADSETHOOK -> context.getString(R.string.key_name_headset)
         else -> KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
     }
-
-    /** [keyName] with the app's resources, which follow the app language too (per-app language applies process-wide). */
-    fun keyName(code: Int): String = keyName(App.instance, code)
 }
