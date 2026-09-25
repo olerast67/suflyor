@@ -1,0 +1,50 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! The app journal helps most: **Настройки → Журнал → Поделиться** (Settings → Journal → Share).
+        Можно писать по-русски.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what happened instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Where
+      options:
+        - Over Instagram
+        - Over TikTok
+        - Over the camera app
+        - Rehearsal in the app
+        - Import of a file
+        - Somewhere else
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Phone and Android version
+      placeholder: Samsung Galaxy S24 FE, Android 14 (One UI 6.1)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Settings → bottom of the screen
+      placeholder: "0.3"
+    validations:
+      required: true
+  - type: textarea
+    id: journal
+    attributes:
+      label: Journal
+      description: Настройки → Журнал → Поделиться (Settings → Journal → Share). It contains recognized phrases — remove anything private before posting.
+      render: text

@@ -8,12 +8,15 @@ import kotlin.math.abs
  * Follows the reader through a known script using the tail of the speech recognizer's output.
  *
  * Every update aligns the last few recognized words against the whole script (local alignment over words with
- * fuzzy similarity) and keeps only alignments that end on the word just spoken. Each script word carries a weight:
- * long words that occur once in the script prove the position, function words and words repeated all over the
- * script prove little. Then:
- * - following (0–3 words ahead) needs one decent match;
- * - any other move — a retake, a skipped block, starting elsewhere — needs three matched words, enough weight,
- *   a clear lead over every other place in the script, and the same verdict on two updates in a row.
+ * fuzzy similarity) and keeps only alignments that end on the last or second-to-last word heard (the latter with a
+ * penalty). Each script word carries a weight: long words that occur once in the script prove the position,
+ * function words and words repeated all over the script prove little. Then:
+ * - following (0–3 informative words ahead) needs one decent match;
+ * - a nearby line (within [NEAR_LINES] lines), read from its first word, needs two strong words, or one plus the
+ *   start of the next;
+ * - any other move — a retake further back, a skipped block, starting elsewhere — needs three strong words, enough
+ *   evidence and a clear lead over every other place in the script, and the same verdict on the next update unless
+ *   the evidence reaches [JUMP_SURE_EVIDENCE].
  * Silence or off-script talk leaves the position where it is.
  */
 class ScriptTracker(tokens: List<Token>) {
@@ -35,6 +38,19 @@ class ScriptTracker(tokens: List<Token>) {
         }
     }
 
+    /** Number of informative (non-zero weight) words before each position: numbers don't count as distance. */
+    private val weightedBefore: IntArray
+
+    /** Distinct script words: similarity is computed once per (heard word, distinct script word). */
+    private val vocabId: IntArray
+    private val vocab: Array<String>
+    private val simCache = HashMap<String, FloatArray>()
+
+    // DP rows, allocated once: only rows i-1 and i are live, plus a copy of row m-1 for candidate extraction.
+    private val rowA = Row(words.size + 1)
+    private val rowB = Row(words.size + 1)
+    private val rowPrevLast = Row(words.size + 1)
+
     init {
         val stems = words.map { stem(it) }
         val df = stems.groupingBy { it }.eachCount()
@@ -42,6 +58,12 @@ class ScriptTracker(tokens: List<Token>) {
             val base = tokens[spokenIdx[j]].weight
             if (base == 0f) 0f else base * (0.35f + 0.65f / (df[stems[j]] ?: 1))
         }
+        weightedBefore = IntArray(words.size + 1).also { wb ->
+            for (j in words.indices) wb[j + 1] = wb[j] + if (weights[j] > 0f) 1 else 0
+        }
+        val ids = HashMap<String, Int>()
+        vocabId = IntArray(words.size) { j -> ids.getOrPut(words[j]) { ids.size } }
+        vocab = Array(ids.size) { "" }.also { v -> ids.forEach { (word, id) -> v[id] = word } }
     }
 
     val size: Int get() = words.size
@@ -91,7 +113,7 @@ class ScriptTracker(tokens: List<Token>) {
         if (candidates.isEmpty()) return noMove("no match")
         val best = candidates.maxBy { net(it) }
         val target = best.end + 1
-        val delta = target - position
+        val delta = wordDelta(target)
 
         if (delta in 0..FOLLOW_MAX) {
             if (best.score < FOLLOW_MIN_SCORE) return noMove("weak follow")
@@ -137,7 +159,7 @@ class ScriptTracker(tokens: List<Token>) {
 
     /** Alignment score minus the cost of moving that far from the current position. */
     private fun net(c: Candidate): Float {
-        val delta = c.end + 1 - position
+        val delta = wordDelta(c.end + 1)
         val cost = when {
             delta in 0..FOLLOW_MAX -> 0f
             isNear(c) && startsAtAnchor(c) -> 0.3f
@@ -153,7 +175,13 @@ class ScriptTracker(tokens: List<Token>) {
     private fun isNear(c: Candidate): Boolean {
         if (size == 0) return false
         val here = lineIndex[position.coerceIn(0, size - 1)]
-        return abs(lineIndex[c.end] - here) <= NEAR_LINES && abs(c.end + 1 - position) <= NEAR_WORDS
+        return abs(lineIndex[c.end] - here) <= NEAR_LINES && abs(wordDelta(c.end + 1)) <= NEAR_WORDS
+    }
+
+    /** Distance from the current position to [target] in informative words: "12 345 678" is not three words ahead. */
+    private fun wordDelta(target: Int): Int {
+        val d = weightedBefore[target.coerceIn(0, size)] - weightedBefore[position.coerceIn(0, size)]
+        return if (target < position) minOf(d, -1) else d
     }
 
     private fun startsAtAnchor(c: Candidate): Boolean = c.start >= 0 && anchors[c.start]
@@ -176,40 +204,46 @@ class ScriptTracker(tokens: List<Token>) {
     private fun align(hyp: List<String>): List<Candidate> {
         val m = hyp.size
         val w = size
-        val h = Array(m + 1) { FloatArray(w + 1) }
-        val strong = Array(m + 1) { IntArray(w + 1) }
-        val ev = Array(m + 1) { FloatArray(w + 1) }
-        val endsWithMatch = Array(m + 1) { BooleanArray(w + 1) }
-        // Runs of skipped script words / extra recognized words on the path. Capping them keeps a path from
-        // "leaking" old, correctly read words across a long gap onto a far-away match of a common word.
-        val scriptGap = Array(m + 1) { IntArray(w + 1) }
-        val hypGap = Array(m + 1) { IntArray(w + 1) }
-        val start = Array(m + 1) { IntArray(w + 1) { -1 } }
-        val prefixEnd = Array(m + 1) { BooleanArray(w + 1) }
+        // Similarity rows per heard word, kept while the word stays in the tail.
+        simCache.keys.retainAll(hyp.toSet())
+        val sims = Array(m) { i -> simCache.getOrPut(hyp[i]) { FloatArray(vocab.size) { v -> TextNorm.similarity(hyp[i], vocab[v]) } } }
+        var prev = rowA
+        var cur = rowB
+        prev.clear()
+        rowPrevLast.clear()
         for (i in 1..m) {
             val word = hyp[i - 1]
+            val simRow = sims[i - 1]
+            cur.clearCell(0)
             for (j in 1..w) {
                 val sj = j - 1
                 var weight = weights[sj]
-                var sim = if (weight == 0f) 0f else TextNorm.similarity(word, words[sj])
+                if (weight == 0f) {
+                    // Numbers (weight 0) can't be matched; they are transparent, so "в 2025 году" still reads as a run.
+                    cur.copyCell(j - 1, j)
+                    cur.ends[j] = false
+                    cur.prefix[j] = false
+                    continue
+                }
+                var sim = simRow[vocabId[sj]]
                 var isMatch = sim >= MATCH_SIM
                 var isStrong = isMatch
                 // The recognizer's last word is often still being spoken ("вз" of "взгляни"): a prefix counts, weakly.
-                if (!isMatch && i == m && weight > 0f && isSpokenPrefix(word, words[sj])) {
+                if (!isMatch && i == m && isSpokenPrefix(word, words[sj])) {
                     isMatch = true
                     isStrong = false
                     sim = PREFIX_SIM
                     weight *= 0.5f
                 }
                 // A mismatch is a skipped script word and an extra heard word at once, so it extends both gap runs.
-                val mismatchAllowed = scriptGap[i - 1][j - 1] < MAX_GAP && hypGap[i - 1][j - 1] < MAX_GAP
+                val mismatchAllowed = prev.scriptGap[j - 1] < MAX_GAP && prev.hypGap[j - 1] < MAX_GAP
                 val diag = when {
-                    isMatch -> h[i - 1][j - 1] + weight * (1f + sim)
-                    mismatchAllowed -> h[i - 1][j - 1] + MISMATCH
+                    isMatch -> prev.h[j - 1] + weight * (1f + sim)
+                    mismatchAllowed -> prev.h[j - 1] + MISMATCH
                     else -> 0f
                 }
-                val up = if (hypGap[i - 1][j] < MAX_GAP) h[i - 1][j] - GAP_HYP else 0f
-                val left = if (scriptGap[i][j - 1] < MAX_GAP) h[i][j - 1] - GAP_SCRIPT * maxOf(weight, 0.1f) else 0f
+                val up = if (prev.hypGap[j] < MAX_GAP) prev.h[j] - GAP_HYP else 0f
+                val left = if (cur.scriptGap[j - 1] < MAX_GAP) cur.h[j - 1] - GAP_SCRIPT * maxOf(weight, 0.1f) else 0f
                 var best = 0f
                 var s = 0
                 var e = 0f
@@ -220,62 +254,132 @@ class ScriptTracker(tokens: List<Token>) {
                 var pre = false
                 if (diag > best) {
                     best = diag
-                    s = strong[i - 1][j - 1] + if (isStrong) 1 else 0
-                    e = ev[i - 1][j - 1] + if (isMatch) weight * sim else 0f
+                    s = prev.strong[j - 1] + if (isStrong) 1 else 0
+                    e = prev.ev[j - 1] + if (isMatch) weight * sim else 0f
                     matched = isMatch
                     pre = isMatch && !isStrong
-                    st = if (h[i - 1][j - 1] > 0f) start[i - 1][j - 1] else if (isMatch) sj else -1
+                    st = if (prev.h[j - 1] > 0f) prev.start[j - 1] else if (isMatch) sj else -1
                     if (!isMatch) {
-                        sg = scriptGap[i - 1][j - 1] + 1
-                        hg = hypGap[i - 1][j - 1] + 1
+                        sg = prev.scriptGap[j - 1] + 1
+                        hg = prev.hypGap[j - 1] + 1
                     }
                 }
                 if (up > best) {
                     best = up
-                    s = strong[i - 1][j]
-                    e = ev[i - 1][j]
+                    s = prev.strong[j]
+                    e = prev.ev[j]
                     matched = false
                     pre = false
-                    st = start[i - 1][j]
-                    hg = hypGap[i - 1][j] + 1
+                    st = prev.start[j]
+                    sg = 0
+                    hg = prev.hypGap[j] + 1
                 }
                 if (left > best) {
                     best = left
-                    s = strong[i][j - 1]
-                    e = ev[i][j - 1]
+                    s = cur.strong[j - 1]
+                    e = cur.ev[j - 1]
                     matched = false
                     pre = false
-                    st = start[i][j - 1]
+                    st = cur.start[j - 1]
                     hg = 0
-                    sg = scriptGap[i][j - 1] + 1
+                    sg = cur.scriptGap[j - 1] + 1
                 }
-                h[i][j] = best
-                strong[i][j] = s
-                ev[i][j] = e
-                endsWithMatch[i][j] = matched
-                scriptGap[i][j] = sg
-                hypGap[i][j] = hg
-                start[i][j] = st
-                prefixEnd[i][j] = pre
+                cur.h[j] = best
+                cur.strong[j] = s
+                cur.ev[j] = e
+                cur.ends[j] = matched
+                cur.scriptGap[j] = sg
+                cur.hypGap[j] = hg
+                cur.start[j] = st
+                cur.prefix[j] = pre
             }
+            if (i == m - 1) rowPrevLast.copyRow(cur)
+            val t = prev
+            prev = cur
+            cur = t
         }
+        val last = prev
         val out = ArrayList<Candidate>()
         for (j in 1..w) {
             var bestScore = 0f
-            var bestI = -1
-            for (i in maxOf(1, m - 1)..m) {
-                if (!endsWithMatch[i][j]) continue
-                val s = h[i][j] - if (i == m) 0f else LAST_WORD_PENALTY
+            var bestRow: Row? = null
+            if (m >= 2 && rowPrevLast.ends[j]) {
+                val s = rowPrevLast.h[j] - LAST_WORD_PENALTY
                 if (s > bestScore) {
                     bestScore = s
-                    bestI = i
+                    bestRow = rowPrevLast
                 }
             }
-            if (bestI > 0) {
-                out += Candidate(j - 1, bestScore, strong[bestI][j], ev[bestI][j], start[bestI][j], prefixEnd[bestI][j])
+            if (last.ends[j] && last.h[j] > bestScore) {
+                bestScore = last.h[j]
+                bestRow = last
+            }
+            if (bestRow != null) {
+                out += Candidate(j - 1, bestScore, bestRow.strong[j], bestRow.ev[j], bestRow.start[j], bestRow.prefix[j])
             }
         }
         return out
+    }
+
+    /** One DP row: path score and what the best path ending in each cell has collected so far. */
+    private class Row(n: Int) {
+        val h = FloatArray(n)
+        val strong = IntArray(n)
+        val ev = FloatArray(n)
+        val ends = BooleanArray(n)
+
+        // Runs of skipped script words / extra recognized words on the path. Capping them keeps a path from
+        // "leaking" old, correctly read words across a long gap onto a far-away match of a common word.
+        val scriptGap = IntArray(n)
+        val hypGap = IntArray(n)
+        val start = IntArray(n) { -1 }
+        val prefix = BooleanArray(n)
+
+        fun clear() {
+            h.fill(0f)
+            strong.fill(0)
+            ev.fill(0f)
+            ends.fill(false)
+            scriptGap.fill(0)
+            hypGap.fill(0)
+            start.fill(-1)
+            prefix.fill(false)
+        }
+
+        /** Column 0 is "nothing matched yet"; every other cell is rewritten on each row. */
+        fun clearCell(j: Int) {
+            h[j] = 0f
+            strong[j] = 0
+            ev[j] = 0f
+            ends[j] = false
+            scriptGap[j] = 0
+            hypGap[j] = 0
+            start[j] = -1
+            prefix[j] = false
+        }
+
+        /** Cell [to] takes over the path of cell [from] unchanged. */
+        fun copyCell(from: Int, to: Int) {
+            h[to] = h[from]
+            strong[to] = strong[from]
+            ev[to] = ev[from]
+            ends[to] = ends[from]
+            scriptGap[to] = scriptGap[from]
+            hypGap[to] = hypGap[from]
+            start[to] = start[from]
+            prefix[to] = prefix[from]
+        }
+
+        fun copyRow(src: Row) {
+            src.h.copyInto(h)
+            src.strong.copyInto(strong)
+            src.ev.copyInto(ev)
+            src.ends.copyInto(ends)
+            src.scriptGap.copyInto(scriptGap)
+            src.hypGap.copyInto(hypGap)
+            src.start.copyInto(start)
+            src.prefix.copyInto(prefix)
+        }
     }
 
     private fun isSpokenPrefix(partial: String, word: String): Boolean =

@@ -2,14 +2,17 @@ package com.olerast.suflyor
 
 import android.Manifest
 import android.content.ClipboardManager
+import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.provider.Settings
 import android.view.KeyEvent
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -60,19 +63,71 @@ class MainActivity : ComponentActivity() {
 
     private val pickFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(::importUri) }
 
-    private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+    private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         val r = Readiness.check(this)
         readiness = r
-        if (r.mic) afterMicGranted?.invoke()
+        // A second refusal (the rationale was offered before, not any more) is "don't ask again". A first dialog
+        // closed with Back also leaves no rationale, but the dialog simply shows again next time: left alone.
+        val refusedForGood = micRationaleBefore && !shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)
+        if (r.mic) {
+            afterMicGranted?.invoke()
+        } else if (result.containsKey(Manifest.permission.RECORD_AUDIO) && refusedForGood) {
+            openMicSettings()
+        }
         afterMicGranted = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        // The UI is always dark: light system-bar icons regardless of the system theme.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+        )
         super.onCreate(savedInstanceState)
+        savedInstanceState?.getStringArrayList(KEY_BACK_STACK)?.let { saved ->
+            val restored = saved.mapNotNull(::decodeScreen)
+            if (restored.isNotEmpty()) {
+                backStack.clear()
+                backStack.addAll(restored)
+            }
+        }
         readiness = Readiness.check(this)
         setContent { SuflyorTheme { Root() } }
         if (savedInstanceState == null) handleIncoming(intent)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putStringArrayList(KEY_BACK_STACK, ArrayList(backStack.map(::encodeScreen)))
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Rehearsal stops when the app goes to the background (onStop); resume listening when it comes back.
+        if (backStack.lastOrNull() == Screen.Rehearsal && app.engine.state.mode == SessionEngine.Mode.IDLE &&
+            Readiness.check(this).mic
+        ) {
+            app.engine.start(SessionEngine.Mode.IN_APP)
+        }
+    }
+
+    private fun encodeScreen(s: Screen): String = when (s) {
+        Screen.Library -> "library"
+        is Screen.Script -> "script:${s.id}"
+        is Screen.Editor -> "editor:${s.id.orEmpty()}"
+        Screen.Rehearsal -> "rehearsal"
+        Screen.Settings -> "settings"
+        Screen.Journal -> "journal"
+    }
+
+    private fun decodeScreen(s: String): Screen? = when {
+        s == "library" -> Screen.Library
+        s.startsWith("script:") -> Screen.Script(s.removePrefix("script:"))
+        s.startsWith("editor:") -> Screen.Editor(s.removePrefix("editor:").ifEmpty { null })
+        s == "rehearsal" -> Screen.Rehearsal
+        s == "settings" -> Screen.Settings
+        s == "journal" -> Screen.Journal
+        else -> null
     }
 
     private val a11yListener: () -> Unit = { readiness = Readiness.check(this) }
@@ -178,10 +233,27 @@ class MainActivity : ComponentActivity() {
 
     // ---- actions ------------------------------------------------------------------------------------------------
 
+    private var micRationaleBefore = false
+
     private fun requestRuntimePermissions() {
-        val perms = mutableListOf(Manifest.permission.RECORD_AUDIO)
+        val mic = Manifest.permission.RECORD_AUDIO
+        micRationaleBefore = shouldShowRequestPermissionRationale(mic)
+        // Asked before, not granted, no rationale: denied for good, the system would answer without a dialog.
+        if (!Readiness.check(this).mic && app.settings.micAsked && !micRationaleBefore) {
+            afterMicGranted = null
+            openMicSettings()
+            return
+        }
+        app.settings.micAsked = true
+        val perms = mutableListOf(mic)
         if (Build.VERSION.SDK_INT >= 33) perms += Manifest.permission.POST_NOTIFICATIONS
         permissions.launch(perms.toTypedArray())
+    }
+
+    /** Only app settings can bring the microphone back once it is denied for good. */
+    private fun openMicSettings() {
+        toast("Микрофон запрещён — включи его в разрешениях приложения")
+        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
     }
 
     private fun withMic(action: () -> Unit) {
@@ -206,7 +278,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun saveEditor(id: String?, old: ScriptDocument?, title: String, text: String) {
-        val doc = MarkdownImporter.parse(text, title).copy(title = title, format = old?.format ?: "Текст")
+        val doc = try {
+            DocumentImporter.checkSize(MarkdownImporter.parse(text, title).copy(title = title, format = old?.format ?: "Текст"))
+        } catch (e: ImportException) {
+            toast(e.message ?: "Слишком длинный текст")
+            return
+        }
         if (doc.isEmpty) {
             toast("В тексте нет слов")
             return
@@ -221,48 +298,37 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIncoming(intent: Intent?) {
         intent ?: return
-        when (intent.action) {
-            Intent.ACTION_VIEW -> intent.data?.let(::importUri)
-            Intent.ACTION_SEND -> {
-                @Suppress("DEPRECATION")
-                val stream = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-                when {
-                    stream != null -> importUri(stream)
-                    !text.isNullOrBlank() -> addScript(
-                        DocumentImporter.fromPlainText(text, intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: "Из «Поделиться»"),
-                    )
+        // Relaunching the task from Recents replays the original share: do not import it a second time.
+        if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return
+        runCatching {
+            when (intent.action) {
+                Intent.ACTION_VIEW -> intent.data?.let(::importUri)
+                Intent.ACTION_SEND -> {
+                    val stream = if (Build.VERSION.SDK_INT >= 33) {
+                        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                    }
+                    val text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
+                    when {
+                        stream != null -> importUri(stream)
+                        !text.isNullOrBlank() -> importText(text, intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: "Из «Поделиться»")
+                        else -> toast("Нечего импортировать")
+                    }
                 }
             }
-        }
+        }.onFailure { DiagLog.e("Не удалось принять данные из другого приложения", it) }
     }
 
-    private fun addScript(doc: ScriptDocument) {
-        openScript(app.scripts.add(doc))
-        DiagLog.i("Сценарий: «${doc.title}» (${doc.format}), абзацев ${doc.paragraphs.size}, слов ${app.scripts.model.spokenTokens}")
+    private fun importText(text: String, title: String) {
+        importInBackground { DocumentImporter.checkSize(DocumentImporter.fromPlainText(text, title)) }
     }
 
-    private fun importUri(uri: Uri) {
-        toast("Открываю…")
+    /** Parsing can take a moment on a long text: never on the main thread. */
+    private fun importInBackground(parse: () -> ScriptDocument) {
         Thread {
-            val result = runCatching {
-                val name = queryName(uri)
-                val mime = contentResolver.getType(uri)
-                val bytes = contentResolver.openInputStream(uri)?.use { input ->
-                    val out = ByteArrayOutputStream()
-                    val buf = ByteArray(64 * 1024)
-                    var total = 0
-                    while (true) {
-                        val n = input.read(buf)
-                        if (n < 0) break
-                        total += n
-                        if (total > DocumentImporter.MAX_BYTES) throw ImportException("Файл слишком большой")
-                        out.write(buf, 0, n)
-                    }
-                    out.toByteArray()
-                } ?: throw ImportException("Не удалось открыть файл")
-                DocumentImporter.import(bytes, name, mime) { b, t -> PdfTextExtractor.extract(this, b, t) }
-            }
+            val result = runCatching(parse)
             runOnUiThread {
                 result.onSuccess(::addScript).onFailure {
                     val msg = if (it is ImportException) it.message else "Не получилось прочитать файл: ${it.message}"
@@ -271,6 +337,39 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }.start()
+    }
+
+    private fun addScript(doc: ScriptDocument) {
+        openScript(app.scripts.add(doc))
+        DiagLog.i("Сценарий: «${doc.title}» (${doc.format}), абзацев ${doc.paragraphs.size}, слов ${app.scripts.model.spokenTokens}")
+    }
+
+    private fun importUri(uri: Uri) {
+        // Only documents handed over by other apps. A file:// or android.resource:// URI from an intent would make
+        // this app read with its own permissions — including its private files.
+        if (uri.scheme != ContentResolver.SCHEME_CONTENT) {
+            toast("Не получилось открыть файл")
+            return
+        }
+        toast("Открываю…")
+        importInBackground {
+            val name = queryName(uri)
+            val mime = contentResolver.getType(uri)
+            val bytes = contentResolver.openInputStream(uri)?.use { input ->
+                val out = ByteArrayOutputStream()
+                val buf = ByteArray(64 * 1024)
+                var total = 0
+                while (true) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    total += n
+                    if (total > DocumentImporter.MAX_BYTES) throw ImportException("Файл слишком большой")
+                    out.write(buf, 0, n)
+                }
+                out.toByteArray()
+            } ?: throw ImportException("Не удалось открыть файл")
+            DocumentImporter.import(bytes, name, mime) { b, t -> PdfTextExtractor.extract(this, b, t) }
+        }
     }
 
     private fun queryName(uri: Uri): String? = runCatching {
@@ -286,16 +385,22 @@ class MainActivity : ComponentActivity() {
             toast("В буфере нет текста")
             return
         }
-        addScript(DocumentImporter.fromPlainText(text, "Из буфера"))
+        importText(text, "Из буфера")
     }
 
     private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
 
     companion object {
-        private val MIME_TYPES = arrayOf(
-            "text/*", "application/pdf", "application/rtf", "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "application/vnd.oasis.opendocument.text", "application/octet-stream",
-        )
+        private const val KEY_BACK_STACK = "backStack"
+
+        /** PDF is offered in the picker only where the platform can extract its text. */
+        private val MIME_TYPES: Array<String>
+            get() = listOfNotNull(
+                "text/*",
+                "application/pdf".takeIf { PdfTextExtractor.isSupported() },
+                "application/rtf", "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/vnd.oasis.opendocument.text", "application/octet-stream",
+            ).toTypedArray()
     }
 }

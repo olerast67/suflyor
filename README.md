@@ -1,65 +1,179 @@
-# Суфлёр 0.3
+<p align="center">
+  <img src="docs/images/banner.png" alt="Suflyor: the teleprompter that listens" width="100%">
+</p>
 
-Android-суфлёр для записи рилсов: текст идёт за голосом и работает поверх Instagram, TikTok и системной камеры.
+<p align="center">
+  <a href="https://github.com/OWNER/suflyor/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/OWNER/suflyor?style=flat-square&color=FFB020&label=release"></a>
+  <a href="https://github.com/OWNER/suflyor/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/OWNER/suflyor/total?style=flat-square&color=46D778"></a>
+  <a href="https://github.com/OWNER/suflyor/actions/workflows/ci.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/OWNER/suflyor/ci.yml?branch=main&style=flat-square&label=build"></a>
+  <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square"></a>
+  <img alt="Android 10+" src="https://img.shields.io/badge/Android-10%2B-3DDC84?style=flat-square&logo=android&logoColor=white">
+  <a href="PRIVACY.md"><img alt="No internet permission" src="https://img.shields.io/badge/network-none-9F7AEA?style=flat-square"></a>
+</p>
 
-- **Библиотека сценариев.** Импорт TXT (UTF-8, Windows-1251, KOI8-R, UTF-16), Markdown и Obsidian, DOCX, ODT, RTF, HTML и PDF. Сценарий можно открыть из «Поделиться» и «Открыть с помощью», вставить из буфера или набрать в редакторе.
-- **Экран сценария.**
-  - Предпросмотр и хронометраж.
-  - «Поверх камеры»: запускает плавающее окно и сразу открывает Instagram, TikTok или Камеру.
-  - «Репетиция»: полноэкранный суфлёр по голосу внутри приложения.
-- **Слежение за голосом.** Распознавание русской речи работает офлайн (sherpa-onnx + потоковая модель alphacep).
-  - Позиция показывается с упреждением, прочитанные строки гаснут.
-  - Если начать строку заново, текст откатывается к ней.
-  - `[Пометки в квадратных скобках]` видны, но не читаются.
-- **Окно поверх.** Висит от верхнего края экрана, текст начинается сразу под камерой, кнопки внизу.
-  - **Замок:** нажатия проходят сквозь окно к кнопкам камеры.
-  - **Горизонтальная съёмка:** окно встаёт у объектива и поворачивает текст, даже если камера держит экран вертикально.
-  - **Кнопки:** громкость, Bluetooth-пульт, кольцо или клавиатура. Какая кнопка что делает, назначается в настройках.
-  - **Отсчёт:** 3-2-1 перед прокруткой по скорости.
-- **Плитка в шторке.** Запускает окно с текущим сценарием поверх открытого приложения.
-- **Журнал.** Показывает, чем пишут звук другие приложения и слышит ли суфлёр голос во время их записи.
+<p align="center">
+  <a href="https://github.com/OWNER/suflyor/releases/latest"><img alt="Get the APK on GitHub" src="https://img.shields.io/badge/Get%20the%20APK-GitHub%20Releases-FFB020?style=for-the-badge&logo=github&logoColor=black" height="42"></a>
+  &nbsp;
+  <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/OWNER/suflyor"><img alt="Get it on Obtainium" src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="42"></a>
+</p>
 
-## Сборка
+<p align="center"><b>English</b> · <a href="README.ru.md">Русский</a></p>
 
-```powershell
-.\build.ps1            # отладочная: app\build\outputs\apk\debug\app-debug.apk
-.\build.ps1 -Release   # релизная, со сжатием R8: app\build\outputs\apk\release\app-release.apk
+---
+
+**Suflyor** (Russian *суфлёр*, "prompter") is a free, open-source teleprompter for Android that **listens to you**. It floats over Instagram, TikTok or the camera app and scrolls the script as you speak, so you never chase the text. It works fully offline, and the app has no internet permission at all.
+
+It is made for creators who hold the phone, read a couple of lines to the lens, look back at the text and carry on. If you stumble and start a sentence again, the text goes back with you. If you skip a paragraph, it catches up.
+
+> [!NOTE]
+> **Speech recognition is Russian-only for now**, and so is the interface. English and more languages are the next milestone ([roadmap](#roadmap)).
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/images/screens.png" alt="Library, script, editor and settings screens" width="100%">
+</p>
+
+| Library | Script | Editor | Settings |
+|:---:|:---:|:---:|:---:|
+| All your scripts, imported from almost any format | Preview, reading time and one tap to start over the camera | Plain text with `**emphasis**`, `# headings` and `[notes]` | Text size, speed, remotes, sound source |
+
+## Features
+
+**🎙️ Follows your voice**
+- On-device streaming speech recognition ([sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)). No cloud, no account, no delay from the network.
+- Searches the whole script, not only the next few words. Rare words count more than common ones, so it doesn't jump on every "and".
+- Re-reading a line brings the text back to it after about two words. A skipped block is found after three or four.
+- Pauses and off-script talk leave the text where it is.
+- Lines you have read dim away. `[Stage directions in brackets]` stay visible but are never expected to be spoken.
+
+**📱 Floats over any camera app**
+- Keeps listening while Instagram, TikTok or the stock camera records video. The mic isn't taken away from the prompter, and your reel still gets the sound.
+- The text starts right under the front camera, so your eyes stay near the lens. The controls sit at the bottom.
+- **Lock mode:** touches pass through the window to the camera's own buttons.
+- **Landscape:** the window moves next to the lens and turns the text, even when the camera app keeps the screen in portrait.
+- **Quick Settings tile:** starts the prompter over whatever app is open.
+
+**🎮 Remotes and scrolling**
+- Volume keys, Bluetooth selfie remotes, rings, clickers and keyboards. Each key can be assigned in Settings.
+- Timed scrolling at a set speed, with a 3-2-1 countdown, when you'd rather not use your voice.
+- Rehearsal mode: a full-screen prompter inside the app.
+
+**📄 Imports almost anything**
+- TXT (UTF-8, UTF-16, Windows-1251, KOI8-R), Markdown and Obsidian notes, DOCX, ODT, RTF, HTML and PDF.
+- Open from other apps with *Share* or *Open with*, paste from the clipboard, or type in the editor.
+- Long paragraphs are split into short phrases you can read in one breath.
+
+## How it works
+
+```mermaid
+flowchart LR
+    Mic["🎙️ Microphone"] --> ASR["sherpa-onnx<br/>streaming recognizer<br/>(on the phone)"]
+    ASR -->|"last recognized words"| Tracker["Script tracker<br/>fuzzy local alignment<br/>over the whole script"]
+    Tracker -->|"position"| View["Prompter window<br/>over the camera app"]
+    Script["📄 Your script"] --> Tracker
 ```
 
-**Что нужно на компьютере:** JDK 17 и Android SDK с platform 36. Пути к ним указываются в `local.properties`, этот файл в git не попадает:
+The tracker aligns the last few recognized words against the entire script. It keeps only matches that end on one of the last two words you said (the newest counts more), and it weighs every word by how rare it is in your script. Small steps forward need a single good match. Going back to a nearby line needs about two words from its start. A far jump needs at least three words and a clear lead over every other place in the script; unless the match is very strong, it also waits for the next update to agree.
 
-```properties
-sdk.dir=D\:\\path\\to\\android-sdk
-jdk.dir=D\:\\path\\to\\jdk-17
+## Privacy
+
+**Everything stays on your phone.** The app does not have the `INTERNET` permission, so Android won't let it connect anywhere, and you can check this yourself.
+
+- Audio is used only while a prompter session is running. It is never recorded, stored or sent.
+- The accessibility service is active only during a session. It **cannot read screen content**. It keeps the microphone working while other apps record, shows the floating window, and handles volume and remote-control keys (on by default with a preset set of keys; you can turn this off or reassign the keys in Settings).
+- No analytics, no ads, no accounts, no trackers.
+
+The details are in [PRIVACY.md](PRIVACY.md).
+
+## Install
+
+**Requirements:** Android 10 or newer on a 64-bit ARM phone (almost every phone since 2017). Tested on a Samsung Galaxy S24 FE with One UI 6.1 (Android 14).
+
+1. Download `Suflyor-<version>.apk` from [Releases](https://github.com/OWNER/suflyor/releases/latest) and open it. Allow your browser or file manager to install apps when asked.
+2. Open Suflyor and allow the **microphone**.
+3. Turn on the accessibility service **"Суфлёр: окно поверх и голос"**. The app takes you to the right screen.
+   - On Android 13 and newer, apps installed from a file can't use accessibility at first, and the switch is greyed out. Go to **Settings → Apps → Суфлёр → ⋮ → Allow restricted settings**, then turn the service on again.
+4. On a script, choose Instagram, TikTok or Camera under the **Поверх камеры** (over the camera) button, tap the button and start reading.
+
+**Updates:** new versions install over the old one. With [Obtainium](https://github.com/ImranR98/Obtainium) you get them automatically from this repository.
+
+> [!IMPORTANT]
+> **Google developer verification.** Starting 30 September 2026 in Brazil, Indonesia, Singapore and Thailand (and worldwide in 2027), Android installs apps from outside the Play Store only from verified developers. Until this app is registered, phones in those regions may block the install. Installing over USB with `adb install` still works, as does Android's "advanced flow" for sideloading.
+
+## Verify your download
+
+Release APKs are built by [GitHub Actions](.github/workflows/release.yml) from the tagged source. Each release carries a `SHA256SUMS.txt` file and a signed build-provenance attestation. All releases are signed with the same key:
+
+```
+SHA-256: 77:F3:94:32:F5:05:FB:B7:8B:85:E7:37:CD:00:21:0A:44:C0:7A:13:2C:AC:FF:81:FE:9D:9D:79:CD:E9:A9:06
 ```
 
-**Бинарники в git не хранятся.** Библиотека распознавания sherpa-onnx (50 МБ) и русская модель (28 МБ) при первой сборке скачиваются сами из официальных источников, задача `fetchSpeechAssets`, с проверкой SHA-256.
+```bash
+apksigner verify --print-certs Suflyor-*.apk            # certificate must match the SHA-256 above
+gh attestation verify Suflyor-*.apk --repo OWNER/suflyor  # proves the APK was built by this repository's workflow
+```
 
-**Версии** подобраны под AGP 9.0.1: Kotlin 2.3.20, Gradle 9.1, compileSdk 36, Compose BOM 2026.06.01. Более новые BOM, начиная с 2026.08, требуют AGP 9.1 и compileSdk 37.
+[AppVerifier](https://github.com/soupslurpr/AppVerifier) can check the certificate on the phone.
 
-Релизная сборка пока подписана локальным отладочным ключом, чтобы ставиться поверх уже установленных версий. Перед публикацией APK нужен отдельный ключ подписи.
+## Build from source
 
-## Установка на телефон по USB
+You need JDK 17 and the Android SDK (platform 36).
 
-1. Выключи «Автоблокировку»: Настройки → Безопасность и конфиденциальность → Автоблокировка.
-2. Включи режим разработчика: Настройки → Сведения о телефоне → Сведения о ПО → семь раз нажми «Номер сборки».
-3. Включи Настройки → Параметры разработчика → «Отладка по USB».
-4. Подключи телефон кабелем, разреши отладку для этого компьютера и запусти `.\install.ps1` или `.\install.ps1 -Release`.
+```bash
+git clone https://github.com/OWNER/suflyor.git
+cd suflyor
+./gradlew assembleDebug testDebugUnitTest
+```
 
-При первом запуске разреши микрофон и включи службу «Суфлёр: окно поверх и голос» в спецвозможностях. Если переключатель серый: Настройки → Приложения → Суфлёр → ⋮ → «Разрешить ограниченные настройки».
+- **Downloads on first build.** The speech library (sherpa-onnx 1.13.8, ~50 MB) and the Russian model (~28 MB) are not stored in git. The `fetchSpeechAssets` task downloads them from pinned revisions and checks every file against a pinned SHA-256.
+- **Release builds** (`./gradlew assembleRelease`) are signed only when a key is configured, through `keystore.properties` or the `SUFLYOR_*` environment variables. Without a key they come out unsigned. See [RELEASING.md](RELEASING.md).
+- **On Windows,** `.\build.ps1` and `.\install.ps1` read `sdk.dir` and `jdk.dir` from `local.properties`.
 
-## Устройство
+<details>
+<summary>Project layout</summary>
 
-- `ui/` — экраны на Jetpack Compose: библиотека, сценарий, репетиция, редактор, настройки, журнал; тема и общие компоненты.
-- `data/ScriptRepository` — библиотека сценариев: по JSON-файлу на сценарий.
-- `doc/` — импорт форматов в общий вид: абзацы, заголовки, выделение.
-- `script/` — нормализация слов, раскладка по фразам.
-- `track/ScriptTracker` — сопоставление распознанных слов со сценарием. Это локальное выравнивание с нечётким сравнением, которое заканчивается на только что сказанном слове.
-- `speech/` — захват микрофона и распознавание.
-- `session/` — сессия, foreground-сервис, монитор записей звука на устройстве.
-- `overlay/` — плавающее окно, служба специальных возможностей, вид текста суфлёра, запуск приложений камеры.
+| Path | What's there |
+|---|---|
+| `app/src/main/java/.../ui` | Jetpack Compose screens: library, script, rehearsal, editor, settings, journal |
+| `.../overlay` | Floating window, accessibility service, prompter view, Quick Settings tile |
+| `.../track/ScriptTracker.kt` | Voice-following: word alignment against the script |
+| `.../speech` | Microphone capture and sherpa-onnx recognizer |
+| `.../session` | Session engine and foreground service |
+| `.../doc` | Importers: TXT, Markdown, DOCX, ODT, RTF, HTML, PDF |
+| `.../script` | Word normalization and phrase layout |
+| `app/src/test` | Unit tests for the tracker (with a random stress test) and importers |
 
-## Сторонние компоненты
+</details>
 
-- [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) 1.13.8 — Apache-2.0.
-- Модель [alphacep/vosk-model-small-streaming-ru](https://huggingface.co/alphacep/vosk-model-small-streaming-ru) (int8-сборка от sherpa-onnx) — Apache-2.0.
+## Roadmap
+
+- **0.4: languages.** English speech recognition and interface, then downloadable language packs (Spanish, German, Italian, Polish, Vietnamese and others that have compact streaming models). Language packs will be files you open with the app, so it still needs no internet permission.
+- Mirror mode for beam-splitter teleprompter glass.
+
+Ideas and votes are welcome in [Issues](https://github.com/OWNER/suflyor/issues).
+
+## Support the project
+
+Suflyor is free and always will be: no ads, no paywalls, no "pro" version. If it saves you retakes, you can support its development. Every donation goes into more languages and more devices to test on.
+
+**[❤️ Ways to donate →](DONATE.md)**
+
+Starring the repository and telling other creators about it helps too.
+
+## Contributing
+
+Bug reports from different phones are the most valuable help. Attach the in-app journal: **Настройки → Журнал → Поделиться** (Settings → Journal → Share). See [CONTRIBUTING.md](CONTRIBUTING.md) for building, code style and adding a language. Report security problems privately, as described in [SECURITY.md](SECURITY.md).
+
+## Credits
+
+- [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) by the k2-fsa team: streaming speech recognition (Apache-2.0).
+- [vosk-model-small-streaming-ru](https://huggingface.co/alphacep/vosk-model-small-streaming-ru) by Alpha Cephei: the Russian model (Apache-2.0).
+- [ONNX Runtime](https://github.com/microsoft/onnxruntime) (MIT), Jetpack Compose (Apache-2.0).
+- The full list is in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+**How this was made:** the author designed the app, directed it and tested it on a real phone. Much of the code was written with an AI coding assistant (Claude by Anthropic). The voice tracker and the importers are covered by unit tests in `app/src/test`.
+
+## License
+
+[GNU General Public License v3.0](LICENSE). You may use, study, share and modify Suflyor. Modified versions you distribute must stay open source under the same license.

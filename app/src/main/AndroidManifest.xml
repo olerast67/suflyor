@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- No INTERNET permission: the app cannot connect anywhere (see PRIVACY.md). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
@@ -21,14 +23,29 @@
     <application
         android:name=".App"
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="false"
         android:theme="@style/Theme.Suflyor">
 
+        <!-- Compose pulls in EmojiCompat, which asks Google Play services for a downloadable emoji font.
+             The app draws with system fonts and must not trigger any network work, so turn it off. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
+
+        <!-- Compose-only single activity: it handles rotation and resizing itself instead of being recreated. -->
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density|uiMode|fontScale"
             android:exported="true"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
@@ -41,28 +58,44 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/*" />
-                <data android:mimeType="application/pdf" />
                 <data android:mimeType="application/rtf" />
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
                 <data android:mimeType="application/vnd.oasis.opendocument.text" />
             </intent-filter>
-            <!-- "Открыть с помощью" from file managers and messengers. -->
+            <!-- "Открыть с помощью" from file managers and messengers. Only content:// URIs are accepted. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="content" />
-                <data android:scheme="file" />
                 <data android:mimeType="text/plain" />
                 <data android:mimeType="text/markdown" />
                 <data android:mimeType="text/x-markdown" />
                 <data android:mimeType="text/html" />
-                <data android:mimeType="application/pdf" />
                 <data android:mimeType="application/rtf" />
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
                 <data android:mimeType="application/vnd.oasis.opendocument.text" />
             </intent-filter>
         </activity>
+
+        <!-- PDFs from "Поделиться" / "Открыть с помощью". Off by default: App turns it on only where Android can read
+             PDF text (PdfTextExtractor.isSupported), so the app is not offered for PDFs it would refuse. -->
+        <activity-alias
+            android:name=".PdfImport"
+            android:enabled="false"
+            android:exported="true"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+        </activity-alias>
 
         <!-- Started from the Quick Settings tile: see-through, closes itself after starting the session. -->
         <activity

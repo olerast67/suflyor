@@ -27,14 +27,24 @@ object TextDecoding {
         return if (cyrillicScore(koi8) > cyrillicScore(cp1251)) koi8 else cp1251
     }
 
-    private fun strictUtf8(bytes: ByteArray): String? = try {
-        Charsets.UTF_8.newDecoder()
-            .onMalformedInput(CodingErrorAction.REPORT)
-            .onUnmappableCharacter(CodingErrorAction.REPORT)
-            .decode(ByteBuffer.wrap(bytes))
-            .toString()
-    } catch (_: CharacterCodingException) {
-        null
+    /**
+     * UTF-8 unless it clearly is not. A file cut in the middle of a character or with a few broken bytes is still
+     * UTF-8 (the bad spots become "�"); single-byte Cyrillic text produces almost nothing but errors.
+     */
+    private fun strictUtf8(bytes: ByteArray): String? {
+        try {
+            return Charsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .decode(ByteBuffer.wrap(bytes))
+                .toString()
+        } catch (_: CharacterCodingException) {
+            // fall through to the tolerant check
+        }
+        val lenient = String(bytes, Charsets.UTF_8)
+        val bad = lenient.count { it == '�' }
+        val nonAscii = lenient.count { it.code >= 0x80 && it != '�' }
+        return if (bad * 50 <= nonAscii && bad <= 16) lenient else null
     }
 
     /** In UTF-16 text (Latin or Cyrillic) every high byte is 0x00 or 0x04; single-byte encodings never look like that. */

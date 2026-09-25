@@ -1,0 +1,1 @@
+First public version: voice-following prompter over Instagram, TikTok and the camera; offline Russian speech recognition; import of TXT, Markdown, DOCX, ODT, RTF, HTML and PDF; remotes, Quick Settings tile, rehearsal and timed scrolling.

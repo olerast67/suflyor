@@ -1,0 +1,60 @@
+# Builds the app and runs the unit tests on every push to main and every pull request.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**", "fastlane/**", ".github/ISSUE_TEMPLATE/**"]
+  pull_request:
+    paths-ignore: ["**.md", "docs/**", "fastlane/**", ".github/ISSUE_TEMPLATE/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Validates the Gradle wrapper checksum; 'basic' keeps the cache fully open source.
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-provider: basic
+
+      # The speech library and model (~80 MB) come from fetchSpeechAssets, which re-checks them against the pinned
+      # SHA-256 on every build, so a cached copy cannot smuggle in a different file.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            app/libs/*.aar
+            app/src/main/assets/asr-ru/*.onnx
+            app/src/main/assets/asr-ru/tokens.txt
+            app/src/main/assets/asr-ru/bpe.vocab
+          key: speech-assets-${{ hashFiles('app/build.gradle.kts') }}
+
+      - name: Build and test
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace assembleDebug testDebugUnitTest
+
+      - name: Keep test reports
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-reports
+          path: app/build/reports/tests/
+          retention-days: 7

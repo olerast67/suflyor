@@ -13,19 +13,18 @@ import java.io.File
  * the S SDK extension 13+ (updated through Google Play system updates). Scans without a text layer are reported.
  */
 object PdfTextExtractor {
+    /** Whether this device can read PDF text at all; the file picker hides PDFs otherwise. */
+    fun isSupported(): Boolean = Build.VERSION.SDK_INT >= 35 ||
+        (Build.VERSION.SDK_INT >= 31 && SdkExtensions.getExtensionVersion(Build.VERSION_CODES.S) >= 13)
+
     fun extract(context: Context, bytes: ByteArray, title: String): ScriptDocument {
+        if (!isSupported()) throw ImportException("Чтение PDF на этой версии Android пока не поддерживается. Открой DOCX или TXT.")
         val tmp = File.createTempFile("import", ".pdf", context.cacheDir)
         try {
             tmp.writeBytes(bytes)
             val pages = ParcelFileDescriptor.open(tmp, ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
                 try {
-                    when {
-                        Build.VERSION.SDK_INT >= 35 -> readPlatform(pfd)
-                        Build.VERSION.SDK_INT >= 31 && SdkExtensions.getExtensionVersion(Build.VERSION_CODES.S) >= 13 -> readPreV(pfd)
-                        else -> throw ImportException(
-                            "Чтение PDF на этой версии Android пока не поддерживается. Открой DOCX или TXT.",
-                        )
-                    }
+                    if (Build.VERSION.SDK_INT >= 35) readPlatform(pfd) else readPreV(pfd)
                 } catch (e: SecurityException) {
                     throw ImportException("PDF защищён паролем")
                 }
@@ -43,11 +42,26 @@ object PdfTextExtractor {
     }
 
     private fun readPlatform(pfd: ParcelFileDescriptor): List<String> = PdfRenderer(pfd).use { r ->
-        (0 until r.pageCount).map { i -> r.openPage(i).use { page -> page.textContents.joinToString("\n") { it.text } } }
+        readPages(r.pageCount) { i -> r.openPage(i).use { page -> page.textContents.joinToString("\n") { it.text } } }
     }
 
     private fun readPreV(pfd: ParcelFileDescriptor): List<String> = PdfRendererPreV(pfd).use { r ->
-        (0 until r.pageCount).map { i -> r.openPage(i).use { page -> page.textContents.joinToString("\n") { it.text } } }
+        readPages(r.pageCount) { i -> r.openPage(i).use { page -> page.textContents.joinToString("\n") { it.text } } }
+    }
+
+    /** Stops early on a book-sized PDF instead of pulling all of it into memory first. */
+    private inline fun readPages(count: Int, page: (Int) -> String): List<String> {
+        val out = ArrayList<String>()
+        var chars = 0
+        for (i in 0 until count) {
+            val text = page(i)
+            chars += text.length
+            if (chars > DocumentImporter.MAX_CHARS * 2) {
+                throw ImportException("Текст слишком длинный: суфлёр принимает до ${DocumentImporter.MAX_CHARS / 1000} тыс. знаков")
+            }
+            out += text
+        }
+        return out
     }
 }
 

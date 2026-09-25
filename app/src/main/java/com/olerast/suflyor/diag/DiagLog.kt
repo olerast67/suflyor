@@ -3,6 +3,7 @@ package com.olerast.suflyor.diag
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.olerast.suflyor.BuildConfig
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -24,7 +25,8 @@ object DiagLog {
     @Synchronized
     private fun add(message: String) {
         val line = "${time.format(Date())}  $message"
-        Log.i("Suflyor", line)
+        // The journal holds recognized speech and app names: mirror it to logcat only in debug builds.
+        if (BuildConfig.DEBUG) Log.i("Suflyor", line)
         lines.addLast(line)
         while (lines.size > MAX_LINES) lines.removeFirst()
         if (!notifyPosted) {

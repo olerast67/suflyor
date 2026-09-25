@@ -57,10 +57,12 @@ object ScriptLayout {
         }
         val text = sb.toString()
         notes += bracketNotes(text)
+        val noteChars = BooleanArray(text.length)
+        for (r in notes) for (k in r) if (k in noteChars.indices) noteChars[k] = true
         val tokens = TextNorm.WORD.findAll(text).mapNotNull { m ->
             val norm = TextNorm.normalizeWord(m.value)
             if (norm.isEmpty()) return@mapNotNull null
-            val inNote = notes.any { m.range.first in it }
+            val inNote = noteChars[m.range.first]
             val wasLatin = m.value.any { it in 'a'..'z' || it in 'A'..'Z' }
             Token(
                 norm, m.range.first, m.range.last + 1,
@@ -85,8 +87,14 @@ object ScriptLayout {
         var i = text.indexOf('[')
         while (i >= 0) {
             val close = text.indexOf(']', i + 1)
+            if (close < 0) break
             val paraEnd = text.indexOf(PARAGRAPH_SEPARATOR, i).let { if (it < 0) text.length else it }
-            if (close < 0 || close > paraEnd) break
+            val reopen = text.indexOf('[', i + 1)
+            // An unmatched "[" (closed only in a later paragraph, or reopened first) is plain text: skip just it.
+            if (close > paraEnd || (reopen in 0 until close)) {
+                i = reopen
+                continue
+            }
             out += i..close
             i = text.indexOf('[', close + 1)
         }

@@ -1,10 +1,13 @@
 package com.olerast.suflyor
 
 import android.app.Application
+import android.content.ComponentName
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import com.olerast.suflyor.data.ScriptRepository
 import com.olerast.suflyor.diag.DiagLog
+import com.olerast.suflyor.doc.PdfTextExtractor
 import com.olerast.suflyor.session.SessionEngine
 
 class App : Application() {
@@ -21,10 +24,29 @@ class App : Application() {
         settings = Settings(this)
         engine = SessionEngine(this)
         scripts = ScriptRepository(this, settings)
+        offerPdfImport()
         DiagLog.i("Приложение запущено, Android ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT}), ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}")
     }
 
+    /** Lists the app as a PDF handler only on devices that can read PDF text (see the .PdfImport alias). */
+    private fun offerPdfImport() {
+        val alias = ComponentName(this, "$PACKAGE.PdfImport")
+        val want = if (PdfTextExtractor.isSupported()) {
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        } else {
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        }
+        runCatching {
+            if (packageManager.getComponentEnabledSetting(alias) != want) {
+                packageManager.setComponentEnabledSetting(alias, want, PackageManager.DONT_KILL_APP)
+            }
+        }.onFailure { DiagLog.e("Не удалось настроить открытие PDF", it) }
+    }
+
     companion object {
+        /** Code namespace; the debug build's application id has a ".debug" suffix, class names don't. */
+        private const val PACKAGE = "com.olerast.suflyor"
+
         lateinit var instance: App
             private set
     }
@@ -104,6 +126,11 @@ class Settings(context: Context) {
             cachedBindings = v
             prefs.edit().putString("keyBindings", com.olerast.suflyor.overlay.KeyBindings.format(v)).apply()
         }
+
+    /** The microphone permission was requested at least once (tells "never asked" from "denied for good"). */
+    var micAsked: Boolean
+        get() = prefs.getBoolean("micAsked", false)
+        set(v) = prefs.edit().putBoolean("micAsked", v).apply()
 
     /** Seconds of 3-2-1 before timed scrolling starts or resumes; 0 = off. */
     var countdownSec: Int

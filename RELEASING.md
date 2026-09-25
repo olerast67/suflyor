@@ -1,0 +1,91 @@
+# Releasing
+
+How the maintainer publishes Suflyor. Users don't need any of this.
+
+## One-time setup
+
+1. **Back up the signing key.** The key is `suflyor-release.jks` plus `keystore.properties` with its passwords, stored outside the repository (`F:\telepromter-keys\`). Keep two copies away from this computer: a password manager and an offline drive. **If the key is lost, installed apps can never be updated**. Users would have to uninstall and lose their scripts. The same key is needed for Google developer verification.
+2. **Hide your email in commits.** In GitHub → Settings → Emails, turn on *Keep my email addresses private* and copy the `…@users.noreply.github.com` address. Then run:
+   ```bash
+   git config user.email "ID+USERNAME@users.noreply.github.com"
+   # Rewrites the author of every local commit. Do this only before the first push.
+   git rebase --root --exec "git commit --amend --reset-author --no-edit"
+   ```
+3. **Take the screenshots** (see [Screenshots](#screenshots)): both READMEs show `docs/images/screens.png`.
+4. **Fill in the donation links** in `DONATE.md` and `.github/FUNDING.yml` (see [Donations](#donations)): links, and wallet addresses if you use crypto, or delete the rows you don't need. Until no placeholder is left, release notes leave out the donate line.
+5. **Create the repository** on GitHub as **private** and empty: no README, license or .gitignore, because they are already here. Then push:
+   ```bash
+   git remote add origin https://github.com/USERNAME/suflyor.git
+   git push -u origin main
+   ```
+6. **Run the setup script.** It fills in the repository links, stores the signing key as Actions secrets and sets the description and topics:
+   ```powershell
+   .\tools\github-setup.ps1 -Repo USERNAME/suflyor
+   git add -A ; git commit -m "Point links at the repository" ; git push
+   ```
+   In **Settings → Actions → General**, set *Workflow permissions* to read-only; the release workflow asks for write access itself.
+7. **Check the README on GitHub, then make the repository public:** **Settings → General → Danger Zone → Change visibility**. Run the script once more, `.\tools\github-setup.ps1 -Repo USERNAME/suflyor -SkipSecrets`: private vulnerability reporting and immutable releases can only be switched on for a public repository. Check in **Settings → General → Releases** that *immutable releases* is on. Push the first release tag only after this: build attestations need a public repository.
+8. **Upload the banner as the social preview.** Go to **Settings → General → Social preview** and upload `docs/images/banner.png`.
+
+## Each release
+
+1. In `app/build.gradle.kts`, raise `versionCode` by one and set `versionName`, for example `0.4`.
+2. Add a `## 0.4 — YYYY-MM-DD` section at the top of `CHANGELOG.md`. It becomes the release notes. Write the short store version too: `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and `ru-RU/changelogs/<versionCode>.txt`, at most 500 characters each.
+3. Run `.\build.ps1` and check the app on the phone with `.\install.ps1`.
+4. Commit everything (the new changelog files too), then tag and push:
+   ```bash
+   git add -A
+   git commit -m "Release 0.4"
+   git tag v0.4
+   git push origin main v0.4
+   ```
+5. The [Release workflow](.github/workflows/release.yml) then:
+   - checks that the tag matches `versionName`;
+   - runs the tests;
+   - builds and signs the APK;
+   - checks the signing certificate and that there is no `INTERNET` permission;
+   - writes `SHA256SUMS.txt` and a build provenance attestation;
+   - publishes the GitHub release.
+
+   Obtainium users get the update automatically.
+
+If the workflow fails, fix the problem, delete the tag (`git push --delete origin v0.4`, `git tag -d v0.4`) and tag again. Once a release is published with immutable releases on, its tag can't be reused: bump the version instead.
+
+### Building a signed APK locally
+
+`.\build.ps1 -Release` signs with the key named in `keystore.properties` in the project root, which git ignores. Without that file the release APK comes out unsigned. Check the result:
+
+```bash
+apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
+```
+
+The certificate SHA-256 must be `77:F3:94:32:F5:05:FB:B7:8B:85:E7:37:CD:00:21:0A:44:C0:7A:13:2C:AC:FF:81:FE:9D:9D:79:CD:E9:A9:06`.
+
+## Screenshots
+
+With the phone connected over USB:
+
+```powershell
+.\build.ps1
+.\tools\capture-screenshots.ps1               # library, script, editor, settings
+.\tools\capture-screenshots.ps1 -Manual 5-overlay   # anything on screen now, e.g. the prompter over the camera
+python docs\tools\render_screens.py           # docs/images/screens.png for the README
+```
+
+The status and navigation bars are cropped, so notifications never end up in the pictures.
+
+## Donations
+
+Choose the channels that work where your bank account is, then fill them into `DONATE.md` and `.github/FUNDING.yml`. Remove the rows you don't use.
+
+- **Only Russian cards:** Boosty (main), CloudTips (quick tips), optionally crypto addresses in `DONATE.md`.
+- **Bank account in a country Stripe supports:** GitHub Sponsors (0% fee), Ko-fi (one-off tips), Liberapay, plus Boosty for the Russian audience.
+
+Mention the donate link in each release note (the workflow adds it) and in videos about the app.
+
+## Distribution beyond GitHub
+
+- **Obtainium:** works out of the box. It reads GitHub Releases, and the README has the badge.
+- **Google developer verification:** from 30 September 2026 in Brazil, Indonesia, Singapore and Thailand (worldwide in 2027), sideloaded apps must come from a verified developer. Register the package `com.olerast.suflyor` and this signing key in the Android Developer Console: government ID and a one-time $25 fee. Until then, users in those regions need `adb install` or the "advanced flow".
+- **IzzyOnDroid:** takes the APK from GitHub Releases. Its policy rejects apps whose code is largely AI-generated, and the README states honestly how this app was made. Each file is also limited to 30 MB.
+- **F-Droid:** builds from source. The prebuilt sherpa-onnx AAR would have to be replaced by a source build of sherpa-onnx.

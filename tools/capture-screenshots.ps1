@@ -1,0 +1,92 @@
+﻿# Takes the README screenshots from a phone connected over USB ("USB debugging" on).
+#   .\tools\capture-screenshots.ps1            library, script, editor, settings -> docs\images\screens\*.png
+#   .\tools\capture-screenshots.ps1 -Manual overlay
+#                                              saves whatever is on the screen now as overlay.png (for the prompter
+#                                              over the camera, which needs permissions this script doesn't grant)
+# Uses the debug build (package com.olerast.suflyor.debug) with fresh data, so only the built-in sample script
+# shows. Status and navigation bars are cut off, so notifications and the clock never end up in the pictures.
+# Build first: .\build.ps1
+param([string]$Manual)
+
+$ErrorActionPreference = 'Stop'
+$root = Split-Path $PSScriptRoot -Parent
+$props = Get-Content (Join-Path $root 'local.properties')
+$sdk = (($props | Where-Object { $_ -match '^\s*sdk\.dir\s*=' } | Select-Object -First 1) -replace '^\s*sdk\.dir\s*=\s*', '') -replace '\\(.)', '$1'
+$adb = Join-Path $sdk 'platform-tools\adb.exe'
+$package = 'com.olerast.suflyor.debug'
+$out = Join-Path $root 'docs\images\screens'
+New-Item -ItemType Directory -Force $out | Out-Null
+$tmp = Join-Path ([IO.Path]::GetTempPath()) 'suflyor-shots'
+New-Item -ItemType Directory -Force $tmp | Out-Null
+
+function Adb { & $adb @args; if ($LASTEXITCODE -ne 0) { throw "adb $args failed" } }
+
+# Status and navigation bar bands, from the window manager's insets (fallback: 3% of the height each).
+function Get-Bars {
+    $size = (& $adb shell wm size | Select-String 'Physical size: (\d+)x(\d+)').Matches[0].Groups
+    $h = [int]$size[2].Value
+    $dump = (& $adb shell dumpsys window) -join "`n"
+    $top = [regex]::Match($dump, 'type=statusBars frame=\[0,0\]\[\d+,(\d+)\]')
+    $bottom = [regex]::Match($dump, 'type=navigationBars frame=\[0,(\d+)\]\[\d+,\d+\]')
+    [pscustomobject]@{
+        Top = if ($top.Success) { [int]$top.Groups[1].Value } else { [int]($h * 0.03) }
+        Bottom = if ($bottom.Success) { $h - [int]$bottom.Groups[1].Value } else { [int]($h * 0.03) }
+    }
+}
+
+function Save-Screen([string]$name) {
+    Start-Sleep -Milliseconds 900
+    $raw = Join-Path $tmp "$name.png"
+    Adb shell screencap -p /sdcard/suflyor-shot.png
+    Adb pull /sdcard/suflyor-shot.png $raw | Out-Null
+    Adb shell rm /sdcard/suflyor-shot.png
+    $bars = Get-Bars
+    python (Join-Path $root 'docs\tools\crop_screen.py') $raw (Join-Path $out "$name.png") $bars.Top $bars.Bottom
+    if ($LASTEXITCODE -ne 0) { throw "Could not crop $name.png (python with Pillow is needed)" }
+    # Store listings (IzzyOnDroid, F-Droid) read the same pictures from the fastlane folder.
+    $store = Join-Path $root 'fastlane\metadata\android\en-US\images\phoneScreenshots'
+    New-Item -ItemType Directory -Force $store | Out-Null
+    Copy-Item (Join-Path $out "$name.png") $store -Force
+    Write-Host "saved $name.png"
+}
+
+# Taps the first element whose text or description matches. uiautomator is safe here: the debug build has
+# no accessibility service enabled, so the dump cannot rebind it.
+function Tap([string]$label) {
+    Adb shell uiautomator dump /sdcard/suflyor-ui.xml | Out-Null
+    $xml = Join-Path $tmp 'ui.xml'
+    Adb pull /sdcard/suflyor-ui.xml $xml | Out-Null
+    Adb shell rm /sdcard/suflyor-ui.xml
+    [xml]$ui = Get-Content $xml -Encoding UTF8
+    $node = $ui.SelectNodes('//node') | Where-Object { $_.text -eq $label -or $_.'content-desc' -eq $label } | Select-Object -First 1
+    if (-not $node) { throw "No '$label' on the screen" }
+    $b = [regex]::Matches($node.bounds, '\d+') | ForEach-Object { [int]$_.Value }
+    Adb shell input tap ([int](($b[0] + $b[2]) / 2)) ([int](($b[1] + $b[3]) / 2))
+}
+
+if ($Manual) {
+    Save-Screen $Manual
+    return
+}
+
+$apk = Join-Path $root 'app\build\outputs\apk\debug\app-debug.apk'
+if (-not (Test-Path $apk)) { throw 'Build the debug APK first: .\build.ps1' }
+Adb install -r $apk | Out-Null
+Adb shell pm clear $package | Out-Null
+Adb shell am start -W -n "$package/com.olerast.suflyor.MainActivity" | Out-Null
+Start-Sleep -Seconds 2
+
+Save-Screen '1-library'
+Tap 'Пример'
+Save-Screen '2-script'
+Tap 'Редактировать'
+Save-Screen '3-editor'
+Adb shell input keyevent KEYCODE_BACK
+Adb shell input keyevent KEYCODE_BACK
+Start-Sleep -Milliseconds 600
+Adb shell input keyevent KEYCODE_BACK
+Start-Sleep -Milliseconds 600
+Adb shell am start -W -n "$package/com.olerast.suflyor.MainActivity" | Out-Null
+Tap 'Настройки'
+Save-Screen '4-settings'
+Write-Host "Done. Pictures are in $out; run python docs\tools\render_screens.py for the combined image."

@@ -1,13 +1,25 @@
+import java.net.HttpURLConnection
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
+import java.util.Properties
 
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// Release signing: environment variables (CI) or the gitignored keystore.properties (local). Without them the release
+// APK is left unsigned — never signed with a debug key.
+val keystoreProps = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+
+fun signingValue(env: String, prop: String): String? = System.getenv(env) ?: keystoreProps.getProperty(prop)
+
+val releaseStoreFile = signingValue("SUFLYOR_KEYSTORE_FILE", "storeFile")
 
 android {
     namespace = "com.olerast.suflyor"
@@ -24,14 +36,31 @@ android {
         }
     }
 
+    signingConfigs {
+        if (releaseStoreFile != null) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = signingValue("SUFLYOR_KEYSTORE_PASSWORD", "storePassword")
+                keyAlias = signingValue("SUFLYOR_KEY_ALIAS", "keyAlias")
+                keyPassword = signingValue("SUFLYOR_KEY_PASSWORD", "keyPassword")
+                enableV1Signing = false
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            // Installs next to the release app, so testing never touches the real script library.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Signed with the local debug key for now so it installs over the builds already on the phone.
-            // A dedicated release key is needed before publishing APKs.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
@@ -56,6 +85,12 @@ android {
             excludes += listOf("**/libsherpa-onnx-c-api.so", "**/libsherpa-onnx-cxx-api.so")
         }
     }
+
+    // No encrypted dependency blob for Google in the APK: keeps builds reproducible and scanners quiet.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
 }
 
 kotlin {
@@ -79,10 +114,11 @@ dependencies {
 }
 
 // ---- Speech engine and Russian model --------------------------------------------------------------------------
-// Not stored in git (80 MB of binaries): downloaded once from their official sources and checked by SHA-256.
-// Both are Apache-2.0: https://github.com/k2-fsa/sherpa-onnx and https://huggingface.co/alphacep/vosk-model-small-streaming-ru
+// Not stored in git (80 MB of binaries): downloaded once from their official sources, pinned to exact revisions and
+// checked by SHA-256. Licenses: see THIRD_PARTY_NOTICES.md.
 
-private val modelBase = "https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-small-ru-vosk-int8-2025-08-16/resolve/main"
+private val modelBase =
+    "https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-small-ru-vosk-int8-2025-08-16/resolve/31fa603e4f31279c6e1f7600fed13dc4312663ab"
 
 private val speechAssets = listOf(
     Triple(
@@ -97,7 +133,7 @@ private val speechAssets = listOf(
     // The model's BPE vocabulary for script-word hints; its pieces match tokens.txt.
     Triple(
         "src/main/assets/asr-ru/bpe.vocab",
-        "https://huggingface.co/alphacep/vosk-model-small-streaming-ru/resolve/main/lang/unigram_500.vocab",
+        "https://huggingface.co/alphacep/vosk-model-small-streaming-ru/resolve/e18123ee13f694036a1eea82eb43f9895387cb59/lang/unigram_500.vocab",
         "b159479dd209823a82698ea4092b2627272d96fbe616b91409ed02bc6cfb8df4",
     ),
 )
@@ -115,6 +151,24 @@ private fun sha256(file: File): String {
     return md.digest().joinToString("") { "%02x".format(it) }
 }
 
+private fun download(url: String, to: File) {
+    var lastError: Exception? = null
+    repeat(3) { attempt ->
+        try {
+            val conn = URI(url).toURL().openConnection() as HttpURLConnection
+            conn.connectTimeout = 30_000
+            conn.readTimeout = 60_000
+            conn.instanceFollowRedirects = true
+            conn.inputStream.use { input -> to.outputStream().use { input.copyTo(it) } }
+            return
+        } catch (e: Exception) {
+            lastError = e
+            if (attempt < 2) Thread.sleep(2_000L * (attempt + 1))
+        }
+    }
+    throw GradleException("Could not download $url", lastError)
+}
+
 val fetchSpeechAssets by tasks.registering {
     group = "build setup"
     description = "Downloads the speech recognition library and the Russian model (not stored in git)."
@@ -126,7 +180,7 @@ val fetchSpeechAssets by tasks.registering {
             target.parentFile.mkdirs()
             logger.lifecycle("Downloading $url")
             val part = File(target.parentFile, target.name + ".part")
-            URI(url).toURL().openStream().use { input -> part.outputStream().use { input.copyTo(it) } }
+            download(url, part)
             val got = sha256(part)
             if (got != sha) {
                 part.delete()

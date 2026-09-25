@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
@@ -46,11 +47,25 @@ class SessionService : Service() {
             } else {
                 startForeground(ID, notification)
             }
+            foreground = true
         } catch (e: Exception) {
             DiagLog.e("Не удалось запустить foreground-сервис микрофона", e)
             stopSelf()
+            return START_NOT_STICKY
+        }
+        // The session ended before this start command arrived (OverlayHost does not stop a service that hasn't
+        // called startForeground yet): leave now that it is allowed.
+        if (!OverlayHost.active) {
+            foreground = false
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
         }
         return START_NOT_STICKY
+    }
+
+    override fun onDestroy() {
+        foreground = false
+        super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -59,5 +74,21 @@ class SessionService : Service() {
         const val CHANNEL = "session"
         const val ID = 1
         const val ACTION_STOP = "com.olerast.suflyor.STOP"
+
+        /**
+         * A started instance has called startForeground() and hasn't been asked to stop yet. Cleared as soon as a stop
+         * is requested, so a newer instance that is still waiting for its onStartCommand is never stopped from outside
+         * (it stops itself there instead).
+         */
+        @Volatile
+        var foreground = false
+            private set
+
+        /** Stops the service if it may be stopped now; otherwise its pending onStartCommand does it. */
+        fun stop(context: Context) {
+            if (!foreground) return
+            foreground = false
+            context.stopService(Intent(context, SessionService::class.java))
+        }
     }
 }

@@ -12,23 +12,39 @@ object RtfImporter {
         "footnote", "annotation", "bkmkstart", "bkmkend", "shppict", "nonshppict", "blipuid",
     )
 
-    private class State(var skip: Boolean, var bold: Boolean, var uc: Int)
+    private class State(var skip: Boolean, var bold: Boolean, var uc: Int, var font: Int)
+
+    /** RTF \fcharset numbers → code pages (Cyrillic WordPad text is \fcharset204 even with \ansicpg1252). */
+    private val FONT_CHARSETS = mapOf(
+        128 to "Shift_JIS", 129 to "MS949", 134 to "GBK", 136 to "Big5", 161 to "windows-1253", 162 to "windows-1254",
+        163 to "windows-1258", 177 to "windows-1255", 178 to "windows-1256", 186 to "windows-1257", 204 to "windows-1251",
+        222 to "windows-874", 238 to "windows-1250",
+    )
+    private val FONT_ENTRY = Regex("\\\\f(\\d{1,9})[^;{}]{0,200}?\\\\fcharset(\\d{1,9})")
 
     fun parse(bytes: ByteArray, title: String): ScriptDocument {
         val src = String(bytes, Charsets.ISO_8859_1)
         if (!src.startsWith("{\\rtf")) throw ImportException("Это не RTF-файл")
         var charset: Charset = Charset.forName("windows-1252")
+        // The font table sits at the start; map each font to the code page of its \fcharset.
+        val fontTable = src.indexOf("\\fonttbl").let { if (it < 0) "" else src.substring(it, minOf(src.length, it + 64 * 1024)) }
+        val fontCharsets = HashMap<Int, Charset>()
+        for (m in FONT_ENTRY.findAll(fontTable)) {
+            val name = FONT_CHARSETS[m.groupValues[2].toInt()] ?: continue
+            runCatching { Charset.forName(name) }.onSuccess { fontCharsets[m.groupValues[1].toInt()] = it }
+        }
         val paragraphs = mutableListOf<Paragraph>()
         val pb = ParagraphBuilder()
         val pendingBytes = ByteArrayOutputStream()
         val stack = ArrayDeque<State>()
-        var state = State(skip = false, bold = false, uc = 1)
+        var state = State(skip = false, bold = false, uc = 1, font = -1)
         var skipChars = 0
         var groupStart = false
 
         fun flushBytes() {
             if (pendingBytes.size() > 0) {
-                if (!state.skip) pb.append(String(pendingBytes.toByteArray(), charset), state.bold)
+                val cs = fontCharsets[state.font] ?: charset
+                if (!state.skip) pb.append(String(pendingBytes.toByteArray(), cs), state.bold)
                 pendingBytes.reset()
             }
         }
@@ -51,7 +67,7 @@ object RtfImporter {
                 c == '{' -> {
                     flushBytes()
                     stack.addLast(state)
-                    state = State(state.skip, state.bold, state.uc)
+                    state = State(state.skip, state.bold, state.uc, state.font)
                     groupStart = true
                     i++
                     continue
@@ -117,6 +133,11 @@ object RtfImporter {
                                     flushBytes()
                                     state.bold = false
                                 }
+                                "f" -> if (param != null && !state.skip) {
+                                    flushBytes()
+                                    state.font = param
+                                }
+                                "deff" -> if (param != null && state.font < 0) state.font = param
                                 "uc" -> state.uc = param ?: 1
                                 "u" -> if (param != null) {
                                     val code = if (param < 0) param + 65536 else param
@@ -155,8 +176,10 @@ object RtfImporter {
 
 /** HTML / saved web pages / Google Docs HTML export: block tags become paragraphs, <b>/<strong> and bold spans become emphasis. */
 object HtmlImporter {
-    private val REMOVE = Regex("(?is)<(script|style|head|noscript|template)\\b[^>]*>.*?</\\1\\s*>|<!--.*?-->")
-    private val TAG = Regex("<(/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)>")
+    private val REMOVED_BLOCKS = listOf("script", "style", "head", "noscript", "template")
+
+    /** The attribute run stops at the next '<', so an unclosed tag can't make the scan quadratic. */
+    private val TAG = Regex("<(/?)([a-zA-Z][a-zA-Z0-9]{0,30})([^<>]*)>")
     private val BLOCK = setOf(
         "p", "div", "br", "li", "tr", "section", "article", "blockquote", "ul", "ol", "table", "hr",
         "header", "footer", "main", "aside", "nav", "dd", "dt", "pre", "figure", "figcaption",
@@ -172,8 +195,71 @@ object HtmlImporter {
         "copy" to "©", "reg" to "®", "trade" to "™", "times" to "×", "minus" to "−", "deg" to "°",
     )
 
+    /**
+     * Drops comments, declarations (<!DOCTYPE>, <?xml?>, Word's <![if …]>) and script/style/head blocks in one
+     * linear pass.
+     */
+    private fun stripBlocks(html: String): String {
+        val out = StringBuilder(html.length)
+        // Searches start further and further right, so a remembered result stays valid until we pass it:
+        // a thousand unclosed "<script" or "<!" then cost one scan of the rest, not a thousand.
+        val memo = HashMap<String, IntArray>()
+        fun find(needle: String, from: Int): Int {
+            val m = memo.getOrPut(needle) { intArrayOf(-2, -2) }
+            if (m[0] != -2 && from >= m[0] && (m[1] == -1 || m[1] >= from)) return m[1]
+            val r = html.indexOf(needle, from, ignoreCase = true)
+            m[0] = from
+            m[1] = r
+            return r
+        }
+        fun afterTag(from: Int) = find(">", from).let { if (it < 0) html.length else it + 1 }
+        var i = 0
+        while (i < html.length) {
+            val lt = html.indexOf('<', i)
+            if (lt < 0) {
+                out.append(html, i, html.length)
+                break
+            }
+            out.append(html, i, lt)
+            if (html.startsWith("<!--", lt)) {
+                val end = html.indexOf("-->", lt + 4)
+                i = if (end < 0) html.length else end + 3
+                out.append(' ')
+                continue
+            }
+            if (html.startsWith("<!", lt) || html.startsWith("<?", lt)) {
+                i = afterTag(lt)
+                out.append(' ')
+                continue
+            }
+            val block = REMOVED_BLOCKS.firstOrNull { tag ->
+                html.startsWith("<$tag", lt, ignoreCase = true) && lt + tag.length + 1 < html.length &&
+                    !html[lt + tag.length + 1].isLetterOrDigit()
+            }
+            if (block != null) {
+                val end = find("</$block", lt + 1)
+                // </head> is optional in HTML5: without it, the body starts the content.
+                if (block == "head" && end < 0) {
+                    val body = find("<body", lt + 1)
+                    if (body >= 0) {
+                        i = body
+                        out.append(' ')
+                        continue
+                    }
+                }
+                // Without a closing tag only the opening tag goes; the rest of the document stays.
+                i = if (end < 0) afterTag(lt) else afterTag(end)
+                out.append(' ')
+                continue
+            }
+            out.append('<')
+            i = lt + 1
+        }
+        return out.toString()
+    }
+
     fun parse(html: String, title: String): ScriptDocument {
-        val src = REMOVE.replace(html, " ")
+        val src = stripBlocks(html)
         val paragraphs = mutableListOf<Paragraph>()
         val pb = ParagraphBuilder()
         var kind = Paragraph.Kind.BODY
@@ -210,7 +296,7 @@ object HtmlImporter {
         }
         if (last < src.length) pb.append(decode(src.substring(last)), boldDepth > 0)
         flush()
-        val title2 = Regex("(?is)<title[^>]*>(.*?)</title>").find(html)?.groupValues?.get(1)?.trim()
+        val title2 = Regex("(?is)<title[^<>]{0,200}>([^<]{0,300})</title>").find(html.take(64 * 1024))?.groupValues?.get(1)?.trim()
         return ScriptDocument(title2?.takeIf { it.isNotEmpty() }?.let(::decode) ?: title, "HTML", paragraphs)
     }
 

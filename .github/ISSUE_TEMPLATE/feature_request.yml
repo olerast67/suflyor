@@ -1,0 +1,19 @@
+name: Feature request
+description: An idea that would make recording easier
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What gets in your way when recording?
+      description: Describe the situation, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+  - type: input
+    id: device
+    attributes:
+      label: Phone (optional)

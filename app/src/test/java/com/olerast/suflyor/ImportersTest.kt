@@ -3,12 +3,14 @@ package com.olerast.suflyor
 import com.olerast.suflyor.doc.DocumentImporter
 import com.olerast.suflyor.doc.DocxImporter
 import com.olerast.suflyor.doc.HtmlImporter
+import com.olerast.suflyor.doc.ImportException
 import com.olerast.suflyor.doc.MarkdownImporter
 import com.olerast.suflyor.doc.OdtImporter
 import com.olerast.suflyor.doc.Paragraph
 import com.olerast.suflyor.doc.PdfTextLayout
 import com.olerast.suflyor.doc.PlainTextImporter
 import com.olerast.suflyor.doc.RtfImporter
+import com.olerast.suflyor.doc.Sax
 import com.olerast.suflyor.doc.ScriptDocument
 import com.olerast.suflyor.doc.TextDecoding
 import com.olerast.suflyor.script.PhraseBreaker
@@ -122,6 +124,28 @@ class ImportersTest {
     }
 
     @Test
+    fun rtfFontCharsetOverridesDocumentCodepage() {
+        // WordPad on an English Windows: \ansicpg1252, Cyrillic text in a \fcharset204 font.
+        val rtf = "{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl{\\f0\\fnil\\fcharset0 Calibri;}{\\f1\\fnil\\fcharset204 Calibri;}}" +
+            "\\f1 \\'cf\\'f0\\'e8\\'e2\\'e5\\'f2 \\f0 caf\\'e9\\par}"
+        val doc = RtfImporter.parse(rtf.toByteArray(Charsets.ISO_8859_1), "t")
+        assertEquals("Привет café", doc.paragraphs[0].text)
+    }
+
+    @Test
+    fun hostileMarkupStaysLinear() {
+        val html = "<p>" + "<".repeat(20_000) + "a <!-- x" + "<script".repeat(2_000) + "</p>"
+        val started = System.nanoTime()
+        HtmlImporter.parse(html, "t")
+        val md = "[".repeat(20_000) + "**".repeat(10_000) + "~~".repeat(10_000) + "<!--" + "%%x".repeat(1)
+        MarkdownImporter.parse(md, "t")
+        assertTrue((System.nanoTime() - started) / 1_000_000 < 3_000)
+        // Closed comments still disappear; an unclosed one keeps the text.
+        assertEquals(listOf("Раз три"), MarkdownImporter.parse("Раз <!-- два --> три", "t").paragraphs.map { it.text })
+        assertEquals(listOf("<p>Текст</p>"), HtmlImporter.parse("<script>alert(1)</script><p>Текст</p><!-- c -->", "t").paragraphs.map { "<p>${it.text}</p>" })
+    }
+
+    @Test
     fun pdfLinesBecomeParagraphs() {
         val page = listOf(
             "Это длинная строка текста, которая переносится на следующую стро-",
@@ -155,6 +179,90 @@ class ImportersTest {
         m.tokens.forEach { t -> assertEquals(t.norm, m.displayText.substring(t.start, t.end).lowercase()) }
         assertEquals("два", m.displayText.substring(m.emphasis[0].first, m.emphasis[0].last + 1))
         assertTrue(m.displayText.contains('\n'))
+    }
+
+    @Test
+    fun markdownLongSpansAndHostileLines() {
+        val cut = "вырезано ".repeat(150)
+        assertEquals(
+            listOf("Вступление ОСТАВИТЬ конец"),
+            MarkdownImporter.parse("Вступление ~~$cut~~ ОСТАВИТЬ ~~коротко~~ конец", "t").paragraphs.map { it.text },
+        )
+        val bold = MarkdownImporter.parse("**${"жирно ".repeat(200)}** обычные **кратко**", "t").paragraphs[0]
+        assertTrue(!bold.text.contains('*') && bold.emphasis.any { it.first == 0 })
+        val image = "Вступление ![кадр](data:image/png;base64,${"A".repeat(6000)}) конец"
+        assertEquals(listOf("Вступление конец"), MarkdownImporter.parse(image, "t").paragraphs.map { it.text })
+        assertEquals("C#", MarkdownImporter.parse("# C#", "t").paragraphs[0].text)
+        assertEquals("Заголовок", MarkdownImporter.parse("## Заголовок ##", "t").paragraphs[0].text)
+        assertEquals(listOf("курсив и snake_case и 2*3*4"), MarkdownImporter.parse("*курсив* и _snake_case_ и 2*3*4", "t").paragraphs.map { it.text })
+
+        val started = System.nanoTime()
+        MarkdownImporter.parse("# a" + " ".repeat(20_000) + "b\n\n|--" + " ".repeat(20_000) + "x\n\n" + "*a ".repeat(100_000), "t")
+        MarkdownImporter.parse("[a](x ".repeat(100_000) + "![a](x ".repeat(100_000), "t")
+        assertTrue((System.nanoTime() - started) / 1_000_000 < 3_000)
+    }
+
+    @Test
+    fun htmlDeclarationsDataUrisAndOptionalHead() {
+        val html = "<!DOCTYPE html><html><head><meta charset=utf-8><title>Мой</title>\n<body>" +
+            "<p>Первый <img src=\"data:image/png;base64,${"A".repeat(6000)}\"> абзац.</p>" +
+            "<![if !supportLists]>1. <![endif]><p>Второй.</p><noscript>без закрытия<p>Третий.</p></body></html>"
+        val doc = HtmlImporter.parse(html, "t")
+        assertEquals("Мой", doc.title)
+        assertEquals(listOf("Первый абзац.", "1.", "Второй.", "без закрытия", "Третий."), doc.paragraphs.map { it.text })
+        val xhtml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><html><body><p>Текст</p></body></html>"
+        assertEquals(listOf("Текст"), HtmlImporter.parse(xhtml, "t").paragraphs.map { it.text })
+    }
+
+    @Test
+    fun docxWithDtdIsRefusedWhereverItHides() {
+        val w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        val body = "<w:document xmlns:w=\"$w\"><w:body><w:p><w:r><w:t>&b;</w:t></w:r></w:p></w:body></w:document>"
+        val dtd = "<!DOCTYPE w:document [<!ENTITY a \"aaaaaaaaaa\"><!ENTITY b \"&a;&a;&a;&a;&a;&a;&a;&a;\">]>"
+        // The text check only sees the first 4 KB; the parser must still refuse a DTD after a long comment.
+        val late = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!--${"x".repeat(5000)}-->$dtd$body"
+        for (androidLike in listOf(false, true)) {
+            Sax.onlyLexicalGuard = androidLike
+            try {
+                val error = runCatching { DocxImporter.parse(zip("word/document.xml" to late), "t") }.exceptionOrNull()
+                assertTrue("$error", error is ImportException && error.message!!.contains("небезопасен"))
+            } finally {
+                Sax.onlyLexicalGuard = false
+            }
+        }
+    }
+
+    @Test
+    fun secondReviewRegressions() {
+        // Link targets with parentheses (Wikipedia) and deep quote / rule lines.
+        assertEquals(
+            listOf("См. Меркурий и ."),
+            MarkdownImporter.parse("См. [Меркурий](https://en.wikipedia.org/wiki/Mercury_(planet)) и ![фото](photo_(1).jpg).", "t")
+                .paragraphs.map { it.text },
+        )
+        MarkdownImporter.parse(">".repeat(5000) + "x\n\n" + "> ".repeat(5000) + "\n\n" + "- ".repeat(5000) + "x\n\n" + "* ".repeat(5000), "t")
+        assertEquals(listOf("цитата"), MarkdownImporter.parse("> > цитата", "t").paragraphs.map { it.text })
+        assertTrue(MarkdownImporter.parse("* * *", "t").paragraphs.isEmpty())
+
+        // "<body" mentioned inside a closed head must not end the head early.
+        val html = "<html><head><style>/* <body> reset */ body{margin:0}</style><!-- <body> --><title>Статья</title></head>" +
+            "<body><p>Текст</p></body></html>"
+        assertEquals(listOf("Текст"), HtmlImporter.parse(html, "t").paragraphs.map { it.text })
+
+        // DOCX: the text limit is an ImportException on the JVM too; nesting depth is capped.
+        val w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        val long = "<w:document xmlns:w=\"$w\"><w:body><w:p><w:r><w:t>${"слово ".repeat(120_000)}</w:t></w:r></w:p></w:body></w:document>"
+        val error = runCatching { DocxImporter.parse(zip("word/document.xml" to long), "t") }.exceptionOrNull()
+        assertTrue("$error", error is ImportException)
+        val nested = "<w:document xmlns:w=\"$w\"><w:body>" + "<w:p>".repeat(100_000) + "<w:r><w:t>глубоко</w:t></w:r>" +
+            "</w:p>".repeat(100_000) + "</w:body></w:document>"
+        assertEquals(listOf("глубоко"), DocxImporter.parse(zip("word/document.xml" to nested), "t").paragraphs.map { it.text })
+    }
+
+    @Test
+    fun rtfWithAbsurdFontNumbersStillImports() {
+        val rtf = "{\\rtf1\\ansi{\\fonttbl{\\f99999999999\\fnil\\fcharset99999999999 Arial;}}\\f0 Hello\\par}"
+        assertEquals(listOf("Hello"), RtfImporter.parse(rtf.toByteArray(Charsets.ISO_8859_1), "t").paragraphs.map { it.text })
     }
 
     private fun zip(vararg entries: Pair<String, String>): ByteArray {

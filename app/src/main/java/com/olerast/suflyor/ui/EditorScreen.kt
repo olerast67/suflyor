@@ -20,7 +20,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
@@ -38,8 +38,9 @@ fun EditorScreen(
     onCancel: () -> Unit,
     onSave: (title: String, text: String) -> Unit,
 ) {
-    var title by remember { mutableStateOf(initialTitle) }
-    var text by remember { mutableStateOf(initialText) }
+    // Saveable: typed text survives the app being killed in the background.
+    var title by rememberSaveable { mutableStateOf(initialTitle) }
+    var text by rememberSaveable { mutableStateOf(initialText) }
     val canSave = text.isNotBlank()
 
     Column(Modifier.fillMaxSize().background(Palette.Bg).statusBarsPadding().navigationBarsPadding().imePadding()) {

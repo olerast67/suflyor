@@ -58,8 +58,15 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
 
     @Volatile
     private var asr: AsrEngine? = null
-    private var asrLoading = false
+    private val asrLoadLock = Any()
     private var capture: AudioCapture? = null
+
+    /** Bumped on every manual move / new script: recognizer results from before it are stale and dropped. */
+    @Volatile
+    private var epoch = 0
+
+    /** Identifies the current start(); a model load finishing for an older start does nothing. */
+    private var sessionToken = 0
     private var monitor: RecordingMonitor? = null
 
     private val finalWords = ArrayDeque<String>()
@@ -105,6 +112,9 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
 
     fun setScript(m: ScriptModel) {
         synchronized(lock) {
+            // Reset first, then bump the epoch: a result decoded before the reset carries the old epoch and is dropped.
+            asr?.reset()
+            epoch++
             model = m
             tracker = ScriptTracker(m.tokens)
             finalWords.clear()
@@ -132,33 +142,49 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
         update { copy(countdown = n) }
     }
 
-    /** Moves by display lines: back goes to the start of the current line first, then to previous lines. */
-    fun stepLine(delta: Int) = moveTracker { t ->
-        val tokens = model.tokens
-        if (tokens.isEmpty()) return@moveTracker
-        val text = model.displayText
-        val lineStarts = mutableListOf(0)
-        text.forEachIndexed { i, c -> if (c == '\n' && i + 1 < text.length && text[i + 1] != '\n') lineStarts += i + 1 }
-        val cur = t.nextTokenIndex().coerceAtMost(tokens.size - 1)
-        val offset = tokens[cur].start
-        var line = lineStarts.indexOfLast { it <= offset }.coerceAtLeast(0)
-        val firstTokenOfLine = tokens.indexOfFirst { it.start >= lineStarts[line] }
-        line = when {
-            delta < 0 && firstTokenOfLine < cur -> line
-            else -> (line + delta).coerceIn(0, lineStarts.size - 1)
+    /**
+     * Moves by display lines. Only lines with spoken words count (headings and [notes] are skipped).
+     * Back goes to the start of the current line first, then to the previous line; forward past the last line stays.
+     */
+    fun stepLine(delta: Int) {
+        val target: Int
+        synchronized(lock) {
+            val tokens = model.tokens
+            val text = model.displayText
+            val firsts = ArrayList<Int>()
+            var lastLineStart = -1
+            for ((i, t) in tokens.withIndex()) {
+                if (!t.spoken) continue
+                val lineStart = text.lastIndexOf('\n', t.start - 1) + 1
+                if (lineStart != lastLineStart) {
+                    firsts += i
+                    lastLineStart = lineStart
+                }
+            }
+            if (firsts.isEmpty()) return
+            val cur = tracker.nextTokenIndex()
+            val line = firsts.indexOfLast { it <= cur }
+            target = when {
+                delta < 0 && line < 0 -> firsts[0]
+                delta < 0 && firsts[line] < cur -> firsts[line]
+                delta < 0 -> firsts[(line + delta).coerceAtLeast(0)]
+                line + delta >= firsts.size -> return
+                else -> firsts[(line + delta).coerceAtLeast(0)]
+            }
+            if (target == cur) return
         }
-        val target = tokens.indexOfFirst { it.start >= lineStarts[line] && it.spoken }
-        if (target >= 0) t.jumpToToken(target)
+        moveTracker { it.jumpToToken(target) }
     }
 
     private fun moveTracker(action: (ScriptTracker) -> Unit) {
         val pos: Int
         val next: Int
         synchronized(lock) {
+            asr?.reset()
+            epoch++
             action(tracker)
             finalWords.clear()
             partialWords = emptyList()
-            asr?.reset()
             pos = tracker.position
             displayPos = pos
             next = tracker.nextTokenIndex()
@@ -179,20 +205,18 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
     fun start(mode: Mode) {
         if (state.mode != Mode.IDLE) stop()
         update { copy(mode = mode, starting = true, error = null, paused = false, autoFallback = false) }
+        val token = ++sessionToken
         Thread({
             val asrError = ensureAsr()
-            main.post { if (state.mode == mode && state.starting) continueStart(mode, asrError) }
+            main.post { if (token == sessionToken && state.mode == mode && state.starting) continueStart(mode, asrError) }
         }, "asr-load").start()
     }
 
-    private fun ensureAsr(): String? {
-        synchronized(this) {
-            if (asr != null) return null
-            if (asrLoading) return "Модель ещё загружается"
-            asrLoading = true
-        }
+    /** Loads the recognizer once; concurrent callers wait for the same load instead of failing. */
+    private fun ensureAsr(): String? = synchronized(asrLoadLock) {
+        if (asr != null) return null
         update { copy(asrStatus = "загружаю модель…") }
-        return try {
+        try {
             val t0 = SystemClock.elapsedRealtime()
             val engine = SherpaAsr.create(app)
             engine.setBiasWords(biasWords(model))
@@ -205,13 +229,12 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
             DiagLog.e("Не удалось загрузить распознавание", t)
             update { copy(asrStatus = "ошибка: ${t.message}") }
             "Распознавание не загрузилось: ${t.message}"
-        } finally {
-            synchronized(this) { asrLoading = false }
         }
     }
 
     private fun continueStart(mode: Mode, asrError: String?) {
         val s = app.settings
+        resetStats()
         val cap = AudioCapture(s.audioSource, s.sampleRate, this)
         val err = cap.start()
         if (err != null) {
@@ -220,7 +243,6 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
             return
         }
         capture = cap
-        resetStats()
         monitor = RecordingMonitor(app, { cap.audioSessionId }) { onRecordings(it) }.also { it.start() }
         val a11y = PrompterAccessibilityService.instance != null
         DiagLog.i(
@@ -298,19 +320,25 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
 
         val engine = asr
         if (engine != null) {
+            val e = epoch
             val upd = try {
                 engine.accept(samples, sampleRate)
             } catch (t: Throwable) {
                 DiagLog.e("Ошибка распознавания", t)
                 null
             }
-            if (upd != null) onAsr(upd)
+            if (upd != null) onAsr(upd, e)
         }
         val fallback = state.scroll == Scroll.VOICE && (silenced == true || (zeroSince != 0L && now - zeroSince > 2000))
         update { copy(levelDb = rmsDb, digitalSilence = digitalSilence, silencedBySystem = silenced, autoFallback = fallback) }
+        // The capture thread owns the statistics window, so it also reports and resets it.
+        if (now - lastStatLog >= 5000) {
+            lastStatLog = now
+            logStats()
+        }
     }
 
-    private fun onAsr(upd: AsrUpdate) {
+    private fun onAsr(upd: AsrUpdate, fromEpoch: Int) {
         val words = TextNorm.words(upd.text)
         var moved: ScriptTracker.Update? = null
         val pos: Int
@@ -318,6 +346,8 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
         val now = SystemClock.elapsedRealtime()
         if (!upd.isFinal) lastSpeechAt = now
         synchronized(lock) {
+            // A manual move or a new script happened while this audio was being recognized: it would undo the move.
+            if (fromEpoch != epoch) return
             if (upd.isFinal) {
                 words.forEach { finalWords.addLast(it) }
                 while (finalWords.size > 16) finalWords.removeFirst()
@@ -331,8 +361,10 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
             }
             pos = tracker.position
             if (pos < before) displayPos = pos
-            val maxLead = app.settings.leadWords
-            val lead = if (now - lastSpeechAt < SPEAKING_MS) maxLead else 0
+            // The lead hides recognition latency while following the voice; it has no meaning when paused or timed.
+            val voice = !state.paused && state.scroll == Scroll.VOICE
+            val maxLead = if (voice) app.settings.leadWords else 0
+            val lead = if (voice && now - lastSpeechAt < SPEAKING_MS) maxLead else 0
             displayPos = maxOf(displayPos, minOf(pos + lead, tracker.size)).coerceAtMost(pos + maxLead)
             next = tracker.tokenIndexAt(displayPos)
         }
@@ -403,10 +435,6 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
                     }
                     update { copy(position = pos, nextToken = next) }
                 }
-            }
-            if (now - lastStatLog >= 5000 && st.listening) {
-                lastStatLog = now
-                logStats()
             }
             main.postDelayed(this, 100)
         }

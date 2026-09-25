@@ -1,0 +1,21 @@
+<p><b>Suflyor</b> is a free, open-source teleprompter that listens to you. It floats over Instagram, TikTok or the camera app and scrolls the script as you speak, so you never chase the text.</p>
+
+<p><b>Follows your voice</b></p>
+<ul>
+<li>On-device streaming speech recognition (sherpa-onnx). No cloud, no account.</li>
+<li>Re-read a line and the text goes back with you. Skip a paragraph and it catches up.</li>
+<li>Pauses and off-script talk leave the text where it is.</li>
+</ul>
+
+<p><b>Floats over any camera app</b></p>
+<ul>
+<li>Keeps listening while another app records video, and your video still gets the sound.</li>
+<li>Text right under the front camera; lock mode lets touches reach the camera buttons.</li>
+<li>Landscape mode, Quick Settings tile, volume keys and Bluetooth remotes.</li>
+</ul>
+
+<p><b>Imports almost anything</b>: TXT, Markdown, DOCX, ODT, RTF, HTML and PDF.</p>
+
+<p><b>Private</b>: the app has no internet permission. Audio never leaves the phone. The accessibility service works only during a session and cannot read screen content.</p>
+
+<p>Speech recognition is Russian-only for now; English is coming next.</p>

@@ -1,13 +1,17 @@
 package com.olerast.suflyor.overlay
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.provider.Settings
 import android.view.KeyEvent
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.widget.Toast
 import com.olerast.suflyor.App
 import com.olerast.suflyor.diag.DiagLog
 import com.olerast.suflyor.session.SessionEngine
@@ -18,6 +22,12 @@ object OverlayHost {
     private var controller: OverlayController? = null
     private var watching = false
 
+    /** A session over other apps is running (independent of whether its window currently exists). */
+    var active = false
+        private set
+
+    private var screenOffReceiver: BroadcastReceiver? = null
+
     /** @return null on success, otherwise what the user has to do first. */
     fun startSession(context: Context): String? {
         val a11y = PrompterAccessibilityService.instance
@@ -27,44 +37,97 @@ object OverlayHost {
         }
         val app = App.instance
         val appContext = context.applicationContext
-        context.startForegroundService(Intent(context, SessionService::class.java))
-        app.engine.start(SessionEngine.Mode.OVERLAY)
-        showWindow(context)
+        // Already running (second tap, tile + app): keep the service, microphone and window; just make sure the
+        // window is there. Restarting would publish a transient IDLE and tear the foreground service down.
+        if (active && app.engine.state.mode == SessionEngine.Mode.OVERLAY) {
+            if (controller == null) showOrStop(context)
+            PrompterTileService.requestUpdate(appContext)
+            return null
+        }
         if (!watching) {
             watching = true
             app.engine.addListener { s ->
-                if (s.mode == SessionEngine.Mode.IDLE && !s.starting && controller != null) {
-                    hideWindow()
-                    appContext.stopService(Intent(appContext, SessionService::class.java))
-                    PrompterTileService.requestUpdate(appContext)
-                }
+                if (active && s.mode == SessionEngine.Mode.IDLE && !s.starting) endSession(appContext)
             }
         }
+        // Start the engine first: stopping a running rehearsal publishes IDLE, which must not end this new session.
+        app.engine.start(SessionEngine.Mode.OVERLAY)
+        active = true
+        // The window first: if it can't be shown, nothing else (foreground service, key filtering) is started.
+        if (!showWindow(context)) {
+            stopSession(context)
+            return "Не удалось показать окно суфлёра. Проверь службу спецвозможностей «Суфлёр»."
+        }
+        context.startForegroundService(Intent(context, SessionService::class.java))
+        watchScreen(appContext)
+        PrompterAccessibilityService.instance?.onSessionChanged(true)
         PrompterTileService.requestUpdate(appContext)
         return null
     }
 
     fun stopSession(context: Context) {
         App.instance.engine.stop()
-        hideWindow()
-        context.applicationContext.stopService(Intent(context, SessionService::class.java))
-        PrompterTileService.requestUpdate(context.applicationContext)
+        endSession(context.applicationContext)
     }
 
-    private fun showWindow(context: Context) {
+    /** Idempotent cleanup after the engine went idle, whoever stopped it. */
+    private fun endSession(appContext: Context) {
+        active = false
+        hideWindow()
+        screenOffReceiver?.let { runCatching { appContext.unregisterReceiver(it) } }
+        screenOffReceiver = null
+        // A service that hasn't reached startForeground yet must not be stopped from outside (the system would
+        // kill the app); its pending onStartCommand sees the session is over and stops itself.
+        SessionService.stop(appContext)
+        PrompterAccessibilityService.instance?.onSessionChanged(false)
+        PrompterTileService.requestUpdate(appContext)
+    }
+
+    /**
+     * Screen off = the take is over (camera apps keep the screen on while recording). Stop listening instead of
+     * leaving the microphone open with the prompter over the lock screen.
+     */
+    private fun watchScreen(appContext: Context) {
+        if (screenOffReceiver != null) return
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context, intent: Intent) {
+                if (intent.action == Intent.ACTION_SCREEN_OFF && active) {
+                    DiagLog.i("Экран выключен — сессия остановлена")
+                    stopSession(appContext)
+                }
+            }
+        }
+        appContext.registerReceiver(receiver, IntentFilter(Intent.ACTION_SCREEN_OFF), Context.RECEIVER_NOT_EXPORTED)
+        screenOffReceiver = receiver
+    }
+
+    /** @return whether the prompter window is on screen now. */
+    private fun showWindow(context: Context): Boolean {
         hideWindow()
         val a11y = PrompterAccessibilityService.instance
-        controller = if (a11y != null) {
-            DiagLog.i("Окно поверх: через службу спецвозможностей (TYPE_ACCESSIBILITY_OVERLAY)")
-            OverlayController(a11y, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY)
-        } else {
-            DiagLog.i("Окно поверх: обычное плавающее окно (TYPE_APPLICATION_OVERLAY), спецвозможности выключены")
-            OverlayController(context.applicationContext, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
+        val next = when {
+            a11y != null -> {
+                DiagLog.i("Окно поверх: через службу спецвозможностей (TYPE_ACCESSIBILITY_OVERLAY)")
+                OverlayController(a11y, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY)
+            }
+            Settings.canDrawOverlays(context) -> {
+                DiagLog.i("Окно поверх: обычное плавающее окно (TYPE_APPLICATION_OVERLAY), спецвозможности выключены")
+                OverlayController(context.applicationContext, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
+            }
+            else -> null
         }
-        runCatching { controller?.show() }.onFailure {
-            DiagLog.e("Не удалось показать окно поверх", it)
-            controller = null
-        }
+        val shown = next != null && runCatching { next.show() }.onFailure { DiagLog.e("Не удалось показать окно поверх", it) }.isSuccess
+        if (shown) controller = next
+        return shown
+    }
+
+    /** Mid-session window re-creation. */
+    private fun showOrStop(context: Context) {
+        if (showWindow(context) || !active) return
+        // No way to show the prompter any more (e.g. the accessibility service was turned off mid-session and
+        // there is no overlay permission): do not keep the microphone running invisibly.
+        Toast.makeText(context.applicationContext, "Окно суфлёра закрыто: служба спецвозможностей выключена", Toast.LENGTH_LONG).show()
+        stopSession(context)
     }
 
     fun hideWindow() {
@@ -74,26 +137,41 @@ object OverlayHost {
 
     /** Re-creates the window with the right host when the accessibility service connects or disconnects mid-session. */
     fun onHostChanged(context: Context) {
-        if (controller != null && App.instance.engine.state.mode == SessionEngine.Mode.OVERLAY) showWindow(context)
+        if (active && App.instance.engine.state.mode == SessionEngine.Mode.OVERLAY) showOrStop(context)
     }
 }
 
 /**
- * Accessibility service of the app. It shows nothing by itself; its only jobs are to make Android treat our
- * microphone capture as an accessibility capture (allowed concurrently with a camera app, CDD 5.4.5),
- * host the floating window as a trusted accessibility overlay, report which app is on screen,
- * and let volume keys / a Bluetooth remote control the prompter during a session.
+ * Accessibility service of the app. It shows nothing by itself; its jobs are to make Android treat our microphone
+ * capture as an accessibility capture (allowed concurrently with a camera app, CDD 5.4.5), host the floating window
+ * as a trusted accessibility overlay, and — only while a session runs over another app — report which app is on
+ * screen and let bound hardware keys (volume, Bluetooth remote, keyboard) control the prompter.
+ * It never reads window content.
  */
 class PrompterAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         instance = this
         DiagLog.i("Служба спецвозможностей подключена")
+        onSessionChanged(OverlayHost.active)
         OverlayHost.onHostChanged(this)
         stateListeners.forEach { it() }
     }
 
+    /** Listen to window changes and filter keys only during a session; stay deaf otherwise. */
+    fun onSessionChanged(active: Boolean) {
+        val info = serviceInfo ?: return
+        val keys = active && App.instance.settings.keyControl
+        info.eventTypes = if (active) AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED else 0
+        info.flags = if (keys) {
+            info.flags or AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
+        } else {
+            info.flags and AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS.inv()
+        }
+        runCatching { serviceInfo = info }
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        if (!OverlayHost.active || event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val pkg = event.packageName?.toString() ?: return
         if (pkg == packageName || pkg == "com.android.systemui") return
         App.instance.engine.setForegroundApp(pkg)
@@ -103,15 +181,10 @@ class PrompterAccessibilityService : AccessibilityService() {
     override fun onKeyEvent(event: KeyEvent): Boolean {
         val app = App.instance
         val s = app.settings
-        if (app.engine.state.mode != SessionEngine.Mode.OVERLAY || !s.keyControl) return false
+        if (!OverlayHost.active || app.engine.state.mode != SessionEngine.Mode.OVERLAY || !s.keyControl) return false
         if (KeyBindings.isVolume(event.keyCode) && !s.volumeKeys) return false
         val action = s.keyBindings[event.keyCode] ?: return false
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-            action.perform(app.engine)
-            if (event.device?.isVirtual == false && !KeyBindings.isVolume(event.keyCode)) {
-                DiagLog.i("Кнопка «${KeyBindings.keyName(event.keyCode)}» (${event.device?.name}): ${action.label}")
-            }
-        }
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) action.perform(app.engine)
         return true
     }
 

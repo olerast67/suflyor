@@ -1,4 +1,4 @@
-# Builds the app and runs the tests.
+﻿# Builds the app and runs the tests.
 #   .\build.ps1            debug APK:   app\build\outputs\apk\debug\app-debug.apk
 #   .\build.ps1 -Release   release APK: app\build\outputs\apk\release\app-release.apk
 # JDK 17 comes from JAVA_HOME, or from jdk.dir in local.properties (next to sdk.dir).

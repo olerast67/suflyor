@@ -1,0 +1,140 @@
+# Builds, signs and publishes a release when a version tag is pushed:
+#   git tag v0.3 && git push origin v0.3
+# The tag must match versionName in app/build.gradle.kts. See RELEASING.md.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: write # create the release and upload the APK
+      id-token: write # sign the provenance attestation (Sigstore)
+      attestations: write
+      artifact-metadata: write
+    env:
+      # SHA-256 of the release signing certificate; a build signed with anything else is not published.
+      EXPECTED_CERT_SHA256: 77f39432f505fbb78b85e737cd00210a44c07a132cacff81fe9d9d79cde9a906
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # No cache for releases: the APK is built only from the tagged source and freshly verified downloads.
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-disabled: true
+
+      - name: Check the tag against versionName
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          declared="$(sed -n 's/^[[:space:]]*versionName = "\(.*\)"/\1/p' app/build.gradle.kts)"
+          if [ "$version" != "$declared" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match versionName \"$declared\" in app/build.gradle.kts"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Restore the signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::The KEYSTORE_BASE64 secret is not set (see RELEASING.md)"
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+
+      - name: Test and build the release APK
+        env:
+          SUFLYOR_KEYSTORE_FILE: ${{ runner.temp }}/release.jks
+          SUFLYOR_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SUFLYOR_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SUFLYOR_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          # AGP 9 creates unit tests only for the tested build type (debug); they cover the same code.
+          ./gradlew --no-daemon --stacktrace testDebugUnitTest assembleRelease
+
+      - name: Delete the signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
+
+      - name: Check signature and permissions
+        run: |
+          apk=app/build/outputs/apk/release/app-release.apk
+          tools="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)"
+          "$tools/apksigner" verify --print-certs "$apk" | tee certs.txt
+          if ! grep -qi "certificate SHA-256 digest: $EXPECTED_CERT_SHA256" certs.txt; then
+            echo "::error::The APK is not signed with the release key"
+            exit 1
+          fi
+          "$tools/aapt2" dump permissions "$apk" | tee permissions.txt
+          if grep -q "android.permission.INTERNET" permissions.txt; then
+            echo "::error::The APK requests INTERNET; the privacy statement promises it never does"
+            exit 1
+          fi
+
+      - name: Package
+        run: |
+          mkdir dist
+          cp app/build/outputs/apk/release/app-release.apk "dist/Suflyor-$VERSION.apk"
+          (cd dist && sha256sum "Suflyor-$VERSION.apk" > SHA256SUMS.txt)
+          # Release notes: this version's section of CHANGELOG.md plus how to verify the download.
+          awk -v v="$VERSION" '$0 == "## " v || index($0, "## " v " ") == 1 { f = 1; next } /^## / && f { exit } f' CHANGELOG.md > notes.md
+          cat >> notes.md <<'NOTES'
+
+          ---
+
+          **Install:** download `Suflyor-@VERSION@.apk` below and open it on the phone. On Android 13+ allow restricted settings for the accessibility service (see the README).
+
+          **Verify:** the APK is signed with the certificate `SHA-256 77:F3:94:32:F5:05:FB:B7:8B:85:E7:37:CD:00:21:0A:44:C0:7A:13:2C:AC:FF:81:FE:9D:9D:79:CD:E9:A9:06` and built by this repository's workflow:
+
+          ```
+          apksigner verify --print-certs Suflyor-@VERSION@.apk
+          gh attestation verify Suflyor-@VERSION@.apk --repo @REPO@
+          ```
+          NOTES
+          sed -i "s|@VERSION@|$VERSION|g; s|@REPO@|$GITHUB_REPOSITORY|g" notes.md
+          # The donate line appears once DONATE.md has real links instead of placeholders.
+          if ! grep -qE 'USERNAME|XXXXXXXX|`T\.\.\.`|`UQ\.\.\.`' DONATE.md; then
+            printf '\n❤️ Suflyor is free. If it saves you retakes, [support it](https://github.com/%s/blob/main/DONATE.md).\n' "$GITHUB_REPOSITORY" >> notes.md
+          fi
+          cat notes.md
+
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/Suflyor-*.apk
+
+      # Created as a draft first: with immutable releases turned on, assets can't be added after publishing.
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          draft: true
+          name: Suflyor ${{ env.VERSION }}
+          body_path: notes.md
+          files: |
+            dist/Suflyor-*.apk
+            dist/SHA256SUMS.txt
+          fail_on_unmatched_files: true
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest

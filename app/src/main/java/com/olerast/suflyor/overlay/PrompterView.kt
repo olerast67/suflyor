@@ -182,7 +182,14 @@ class PrompterView(context: Context) : View(context) {
             val y = (e.y - paddingTop + posY).toInt()
             val line = l.getLineForVertical(y)
             val offset = l.getOffsetForHorizontal(line, e.x - paddingLeft)
-            val idx = model.tokens.indexOfFirst { it.end > offset }
+            // The word under the finger, staying on the tapped line: the end of a word or the empty space to the
+            // right of a line must not select the next word or line.
+            val ls = l.getLineStart(line)
+            val le = l.getLineEnd(line)
+            val tokens = model.tokens
+            val onLine = tokens.indices.filter { tokens[it].start in ls until le }
+            val idx = onLine.lastOrNull { tokens[it].start <= offset } ?: onLine.firstOrNull()
+                ?: tokens.indexOfFirst { it.end > offset }
             if (idx >= 0) {
                 manualUntil = 0L
                 onWordTap?.invoke(idx)

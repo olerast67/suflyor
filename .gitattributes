@@ -1,0 +1,17 @@
+# Normalize text files; keep Unix scripts LF and Windows scripts CRLF in every checkout.
+* text=auto eol=lf
+gradlew text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files
+*.jar binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.webp binary
+*.jks binary
+*.aar binary
+*.onnx binary

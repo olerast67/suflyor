@@ -283,4 +283,57 @@ class ScriptTrackerTest {
         assertTrue(TextNorm.similarity("дома", "домой") >= ScriptTracker.MATCH_SIM)
         assertTrue(TextNorm.similarity("камера", "дрон") < ScriptTracker.MATCH_SIM)
     }
+
+    @Test
+    fun unmatchedBracketDoesNotHideLaterNotes() {
+        val m = ScriptLayout.build(
+            ScriptDocument(
+                "t", "test",
+                listOf(
+                    Paragraph("Цена [без доставки [Пауза] и всё."),
+                    Paragraph("Открою скобку [ здесь, а закрою в другом абзаце."),
+                    Paragraph("Конец ] абзаца. Потом [Показать товар] говорим дальше."),
+                ),
+            ),
+            phraseMode = false,
+        )
+        val spoken = m.tokens.filter { it.spoken }.map { it.norm }
+        assertTrue("без" in spoken && "доставки" in spoken)
+        assertTrue("пауза" !in spoken)
+        assertTrue("здесь" in spoken && "конец" in spoken)
+        assertTrue("показать" !in spoken && "товар" !in spoken)
+        assertTrue("говорим" in spoken)
+    }
+
+    @Test
+    fun numbersDoNotStallFollowing() {
+        val doc = ScriptDocument(
+            "t", "test",
+            listOf(Paragraph("Бюджет проекта составил 12 345 678 рублей, а срок сдачи перенесли на 2027 год без штрафов.")),
+        )
+        val m = ScriptLayout.build(doc, phraseMode = false)
+        val t = ScriptTracker(m.tokens)
+        val spoken = m.tokens.filter { it.spoken }.map { it.norm }
+        // The recognizer spells numbers out; the tracker must keep following across them.
+        val said = listOf(
+            "бюджет", "проекта", "составил", "двенадцать", "миллионов", "триста", "рублей", "а", "срок", "сдачи",
+            "перенесли", "на", "две", "тысячи", "двадцать", "седьмой", "год", "без", "штрафов",
+        )
+        read(t, said, mutableListOf())
+        assertEquals(spoken.size, t.position)
+    }
+
+    @Test
+    fun longScriptStaysFast() {
+        val para = script.lines().map { Paragraph(it) }
+        val big = ScriptLayout.build(ScriptDocument("t", "test", List(40) { para }.flatten()), phraseMode = true)
+        val t = ScriptTracker(big.tokens)
+        val w = big.tokens.filter { it.spoken }.map { it.norm }
+        val history = mutableListOf<String>()
+        val started = System.nanoTime()
+        read(t, w.take(300), history)
+        val msPerUpdate = (System.nanoTime() - started) / 1e6 / 300
+        assertEquals(300, t.position)
+        assertTrue("%.1f ms per update".format(msPerUpdate), msPerUpdate < 25.0)
+    }
 }

@@ -1,0 +1,11 @@
+# Keeps the GitHub Actions used by the workflows up to date.
+# Gradle dependencies are updated by hand: Compose and AGP versions must move together (see the compose-bom comment in app/build.gradle.kts).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
