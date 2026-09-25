@@ -63,7 +63,7 @@ It is made for creators who hold the phone, read a couple of lines to the lens, 
 - Rehearsal mode: a full-screen prompter inside the app.
 
 **Imports almost anything**
-- TXT (UTF-8, UTF-16, Windows-1251, KOI8-R), Markdown and Obsidian notes, DOCX, ODT, RTF, HTML and PDF.
+- TXT (UTF-8, UTF-16, Windows-1251, KOI8-R), Markdown and Obsidian notes, DOCX, ODT, RTF, HTML and PDF (PDF needs Android 15, or Android 12–14 with recent Google Play system updates).
 - Open from other apps with *Share* or *Open with*, paste from the clipboard, or type in the editor.
 - Long paragraphs are split into short phrases you can read in one breath.
 

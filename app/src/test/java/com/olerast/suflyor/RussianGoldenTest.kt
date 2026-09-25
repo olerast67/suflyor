@@ -14,7 +14,7 @@ import java.io.File
  * Russian behaviour pinned byte for byte: layout (line breaks, norm, weight, anchor, spoken of every token) and the
  * tracker's position after every heard word in the random and neighbouring-line simulations of [ScriptTrackerTest].
  *
- * The golden file was written by this test from the code before English support (commit a25c85e). To regenerate it
+ * The golden file was written by this test from the code before English support (commit fbf577c). To regenerate it
  * after an intended change of Russian behaviour, delete src/test/resources/golden/ru_golden.txt, run the test and copy
  * build/golden/ru_golden.txt over it.
  */

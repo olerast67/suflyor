@@ -2,7 +2,7 @@
 
 **Suflyor works entirely on your phone. It has no internet access at all.**
 
-- **No network.** The app does not request the `INTERNET` permission, so Android does not let it connect anywhere. You can check this in the app's permissions, or with `aapt2 dump permissions Suflyor-<version>.apk`.
+- **No network.** The app does not request the `INTERNET` permission, so Android does not let it connect anywhere. You can check this in the app's full permission list (Permissions → ⋮ → All permissions), or with `aapt2 dump permissions Suflyor-<version>.apk`.
 - **Microphone.** Audio is used only while the prompter listens: during a session over another app or a rehearsal inside the app. During a session over another app, a notification is shown (on Android 13 and newer only if you allowed notifications; otherwise the session is listed among active apps in Quick Settings). On Android 12 and newer the system also shows its microphone indicator. The speech model built into the app turns the sound into words. Audio is never recorded to a file, stored or sent anywhere.
 - **Accessibility service.** It is used only during a prompter session over another app:
   - Android keeps giving the prompter the microphone while another app (Instagram, TikTok, the camera) records video;
