@@ -1,9 +1,11 @@
 package com.olerast.suflyor.session
 
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import com.olerast.suflyor.App
+import com.olerast.suflyor.R
 import com.olerast.suflyor.diag.DiagLog
 import com.olerast.suflyor.overlay.PrompterAccessibilityService
 import com.olerast.suflyor.script.ScriptModel
@@ -11,9 +13,29 @@ import com.olerast.suflyor.script.TextNorm
 import com.olerast.suflyor.speech.AsrEngine
 import com.olerast.suflyor.speech.AsrUpdate
 import com.olerast.suflyor.speech.AudioCapture
+import com.olerast.suflyor.speech.CaptureError
 import com.olerast.suflyor.speech.SherpaAsr
 import com.olerast.suflyor.track.ScriptTracker
+import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
+
+/** What went wrong with listening. toString() is the English journal text. */
+sealed interface SessionError {
+    /** The recognizer didn't load: the session still runs, without voice following. */
+    data class AsrLoadFailed(val detail: String) : SessionError {
+        override fun toString() = "Recognizer didn't load: $detail"
+    }
+
+    data class Capture(val error: CaptureError) : SessionError {
+        override fun toString() = error.toString()
+    }
+
+    /** What the user sees (the window's diagnostics line). */
+    fun message(context: Context): String = when (this) {
+        is AsrLoadFailed -> context.getString(R.string.session_error_asr_failed, detail)
+        is Capture -> error.message(context)
+    }
+}
 
 /** Microphone -> recognizer -> tracker pipeline plus diagnostics. One session at a time, in-app or over other apps. */
 class SessionEngine(private val app: App) : AudioCapture.Listener {
@@ -39,8 +61,7 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
         val total: Int = 0,
         val recordings: List<RecordingMonitor.Rec> = emptyList(),
         val foregroundApp: String? = null,
-        val asrStatus: String = "модель не загружена",
-        val error: String? = null,
+        val error: SessionError? = null,
         /** Seconds left in the 3-2-1 before timed scrolling starts; 0 when there is none. */
         val countdown: Int = 0,
     )
@@ -213,43 +234,40 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
     }
 
     /** Loads the recognizer once; concurrent callers wait for the same load instead of failing. */
-    private fun ensureAsr(): String? = synchronized(asrLoadLock) {
+    private fun ensureAsr(): SessionError? = synchronized(asrLoadLock) {
         if (asr != null) return null
-        update { copy(asrStatus = "загружаю модель…") }
         try {
             val t0 = SystemClock.elapsedRealtime()
             val engine = SherpaAsr.create(app)
             engine.setBiasWords(biasWords(model))
             asr = engine
             val ms = SystemClock.elapsedRealtime() - t0
-            DiagLog.i("Распознавание загружено за $ms мс: ${engine.description}")
-            update { copy(asrStatus = "готово (${engine.description})") }
+            DiagLog.i("Recognizer loaded in $ms ms: ${engine.description}")
             null
         } catch (t: Throwable) {
-            DiagLog.e("Не удалось загрузить распознавание", t)
-            update { copy(asrStatus = "ошибка: ${t.message}") }
-            "Распознавание не загрузилось: ${t.message}"
+            DiagLog.e("Couldn't load the recognizer", t)
+            SessionError.AsrLoadFailed(t.message ?: t.javaClass.simpleName)
         }
     }
 
-    private fun continueStart(mode: Mode, asrError: String?) {
+    private fun continueStart(mode: Mode, asrError: SessionError?) {
         val s = app.settings
         resetStats()
         val cap = AudioCapture(s.audioSource, s.sampleRate, this)
         val err = cap.start()
         if (err != null) {
-            DiagLog.e(err)
-            update { copy(mode = Mode.IDLE, starting = false, listening = false, error = err) }
+            DiagLog.e(err.toString())
+            update { copy(mode = Mode.IDLE, starting = false, listening = false, error = SessionError.Capture(err)) }
             return
         }
         capture = cap
         monitor = RecordingMonitor(app, { cap.audioSessionId }) { onRecordings(it) }.also { it.start() }
         val a11y = PrompterAccessibilityService.instance != null
         DiagLog.i(
-            "Старт: ${if (mode == Mode.OVERLAY) "поверх других приложений" else "внутри приложения"}, " +
-                "источник ${AudioCapture.sourceName(s.audioSource)}, ${s.sampleRate} Гц, " +
-                "служба спецвозможностей ${if (a11y) "ВКЛ" else "выкл"}, " +
-                "распознавание: ${asr?.description ?: "нет"}",
+            "Start: ${if (mode == Mode.OVERLAY) "over other apps" else "in app"}, " +
+                "source ${AudioCapture.sourceName(s.audioSource)}, ${s.sampleRate} Hz, " +
+                "accessibility ${if (a11y) "ON" else "off"}, " +
+                "recognizer: ${asr?.description ?: "none"}",
         )
         update { copy(starting = false, listening = true, error = asrError) }
         lastTick = SystemClock.elapsedRealtime()
@@ -263,7 +281,7 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
         capture = null
         monitor?.stop()
         monitor = null
-        if (state.mode != Mode.IDLE) DiagLog.i("Сессия остановлена")
+        if (state.mode != Mode.IDLE) DiagLog.i("Session stopped")
         lastRecordings = emptyList()
         update {
             copy(
@@ -278,14 +296,14 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
     fun togglePause() {
         val paused = !state.paused
         update { copy(paused = paused) }
-        DiagLog.i(if (paused) "Пауза" else "Продолжаем")
+        DiagLog.i(if (paused) "Paused" else "Resumed")
         if (!paused && state.scroll == Scroll.AUTO) startCountdown()
     }
 
     fun setScroll(scroll: Scroll) {
         autoCarry = 0.0
         update { copy(scroll = scroll) }
-        DiagLog.i(if (scroll == Scroll.AUTO) "Прокрутка: по скорости ${app.settings.autoScrollWpm} слов/мин" else "Прокрутка: по голосу")
+        DiagLog.i(if (scroll == Scroll.AUTO) "Scroll: auto, ${app.settings.autoScrollWpm} wpm" else "Scroll: voice")
         if (scroll == Scroll.AUTO) startCountdown() else {
             countdownEndsAt = 0L
             update { copy(countdown = 0) }
@@ -294,7 +312,7 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
 
     fun setForegroundApp(pkg: String) {
         if (pkg == state.foregroundApp) return
-        if (state.mode != Mode.IDLE) DiagLog.i("На экране: $pkg")
+        if (state.mode != Mode.IDLE) DiagLog.i("On screen: $pkg")
         update { copy(foregroundApp = pkg) }
     }
 
@@ -313,7 +331,7 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
             lastSilencedCheck = now
             val s = capture?.isSilencedBySystem
             if (s != null && s != silenced) {
-                DiagLog.i(if (s) "Android заглушил наш микрофон (приоритет у другого приложения)" else "Микрофон снова слышит")
+                DiagLog.i(if (s) "Android silenced our mic (another app has priority)" else "Mic hears again")
             }
             silenced = s
         }
@@ -324,7 +342,7 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
             val upd = try {
                 engine.accept(samples, sampleRate)
             } catch (t: Throwable) {
-                DiagLog.e("Ошибка распознавания", t)
+                DiagLog.e("Recognition error", t)
                 null
             }
             if (upd != null) onAsr(upd, e)
@@ -370,12 +388,12 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
         }
         moved?.let { u ->
             if (u.moved && u.reason != "follow") {
-                DiagLog.i("Трекер: ${u.reason} → слово ${u.position}/${tracker.size} (совпало ${u.matches}, счёт %.1f)".format(u.score))
+                DiagLog.i("Tracker: ${u.reason} → word ${u.position}/${tracker.size} (matched ${u.matches}, score ${"%.1f".format(Locale.ROOT, u.score)})")
             }
         }
         if (upd.isFinal && upd.text.isNotBlank()) {
             statWords += words.size
-            DiagLog.i("Услышал: ${upd.text}")
+            DiagLog.i("Heard: ${upd.text}")
         }
         update {
             copy(
@@ -387,9 +405,9 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
         }
     }
 
-    override fun onCaptureError(message: String) {
-        DiagLog.e(message)
-        update { copy(error = message) }
+    override fun onCaptureError(error: CaptureError) {
+        DiagLog.e(error.toString())
+        update { copy(error = SessionError.Capture(error)) }
     }
 
     // ---- main thread --------------------------------------------------------------------------------------------
@@ -398,7 +416,7 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
         val described = recs.map { it.describe() }.sorted()
         if (described != lastRecordings) {
             lastRecordings = described
-            DiagLog.i("Запись звука на устройстве: " + if (described.isEmpty()) "никто" else described.joinToString(" | "))
+            DiagLog.i("Audio capture on device: " + if (described.isEmpty()) "none" else described.joinToString(" | "))
         }
         val ours = recs.firstOrNull { it.ours }
         update { copy(recordings = recs, silencedBySystem = ours?.silenced ?: silencedBySystem) }
@@ -460,9 +478,9 @@ class SessionEngine(private val app: App) : AudioCapture.Listener {
         val avg = statDbSum / statFrames
         val zeroPct = statZeroFrames * 100 / statFrames
         DiagLog.i(
-            "Микрофон за 5 с: средний %.0f дБ, пик %.0f дБ, нулевых кадров %d%%, слов %d, позиция %d/%d%s".format(
-                avg, statDbMax, zeroPct, statWords, state.position, state.total,
-                state.foregroundApp?.let { ", на экране $it" } ?: "",
+            "Mic, last 5 s: avg %.0f dB, peak %.0f dB, zero frames %d%%, words %d, position %d/%d%s".format(
+                Locale.ROOT, avg, statDbMax, zeroPct, statWords, state.position, state.total,
+                state.foregroundApp?.let { ", on screen $it" } ?: "",
             ),
         )
         statFrames = 0

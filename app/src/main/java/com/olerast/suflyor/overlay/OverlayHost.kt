@@ -100,7 +100,7 @@ object OverlayHost {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context, intent: Intent) {
                 if (intent.action == Intent.ACTION_SCREEN_OFF && active) {
-                    DiagLog.i("Экран выключен — сессия остановлена")
+                    DiagLog.i("Screen off — session stopped")
                     stopSession(appContext)
                 }
             }
@@ -115,16 +115,16 @@ object OverlayHost {
         val a11y = PrompterAccessibilityService.instance
         val next = when {
             a11y != null -> {
-                DiagLog.i("Окно поверх: через службу спецвозможностей (TYPE_ACCESSIBILITY_OVERLAY)")
+                DiagLog.i("Overlay: via the accessibility service (TYPE_ACCESSIBILITY_OVERLAY)")
                 OverlayController(a11y, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY)
             }
             Settings.canDrawOverlays(context) -> {
-                DiagLog.i("Окно поверх: обычное плавающее окно (TYPE_APPLICATION_OVERLAY), спецвозможности выключены")
+                DiagLog.i("Overlay: plain floating window (TYPE_APPLICATION_OVERLAY), accessibility off")
                 OverlayController(context.applicationContext, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
             }
             else -> null
         }
-        val shown = next != null && runCatching { next.show() }.onFailure { DiagLog.e("Не удалось показать окно поверх", it) }.isSuccess
+        val shown = next != null && runCatching { next.show() }.onFailure { DiagLog.e("Couldn't show the overlay window", it) }.isSuccess
         if (shown) controller = next
         return shown
     }
@@ -134,7 +134,7 @@ object OverlayHost {
         if (showWindow(context) || !active) return
         // No way to show the prompter any more (e.g. the accessibility service was turned off mid-session and
         // there is no overlay permission): do not keep the microphone running invisibly.
-        Toast.makeText(context.applicationContext, "Окно суфлёра закрыто: служба спецвозможностей выключена", Toast.LENGTH_LONG).show()
+        Toast.makeText(context.applicationContext, R.string.overlay_toast_closed_a11y_off, Toast.LENGTH_LONG).show()
         stopSession(context)
     }
 
@@ -159,7 +159,7 @@ object OverlayHost {
 class PrompterAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         instance = this
-        DiagLog.i("Служба спецвозможностей подключена")
+        DiagLog.i("Accessibility service connected")
         onSessionChanged(OverlayHost.active)
         OverlayHost.onHostChanged(this)
         stateListeners.forEach { it() }
@@ -200,7 +200,7 @@ class PrompterAccessibilityService : AccessibilityService() {
 
     override fun onUnbind(intent: Intent?): Boolean {
         instance = null
-        DiagLog.i("Служба спецвозможностей отключена")
+        DiagLog.i("Accessibility service disconnected")
         OverlayHost.onHostChanged(applicationContext)
         stateListeners.forEach { it() }
         return super.onUnbind(intent)

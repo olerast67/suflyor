@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="overlay_cd_font_smaller">Уменьшить текст</string>
+    <string name="overlay_cd_font_larger">Увеличить текст</string>
+    <string name="overlay_cd_lock">Закрепить: нажатия пойдут в камеру</string>
+    <string name="overlay_cd_close">Закрыть</string>
+    <string name="overlay_cd_unlock">Открепить окно</string>
+
+    <string name="overlay_status_starting">запуск…</string>
+    <string name="overlay_status_stopped">стоп</string>
+    <string name="overlay_status_paused">пауза</string>
+    <string name="overlay_status_auto">по скорости</string>
+    <string name="overlay_status_mic_busy">микрофон занят</string>
+    <string name="overlay_status_cant_hear">не слышу</string>
+    <string name="overlay_status_listening">слушаю</string>
+
+    <string name="overlay_toast_closed_a11y_off">Окно суфлёра закрыто: служба спецвозможностей выключена</string>
+
+    <string name="tile_label">Суфлёр</string>
+    <string name="tile_subtitle_listening">слушает</string>
+
+    <string name="notification_channel_session">Суфлёр работает</string>
+    <string name="notification_session_title">Суфлёр слушает</string>
+    <string name="notification_session_text">Окно поверх приложений включено</string>
+    <string name="notification_action_stop">Остановить</string>
+
+    <string name="session_error_asr_failed">Распознавание не загрузилось: %1$s</string>
+    <string name="session_error_rate_unsupported">Частота %1$d Гц не поддерживается микрофоном</string>
+    <string name="session_error_recorder_create">AudioRecord не создан: %1$s</string>
+    <string name="session_error_recorder_init">AudioRecord не инициализирован (нет разрешения на микрофон?)</string>
+    <string name="session_error_record_start">Не удалось начать запись: %1$s</string>
+    <string name="session_error_mic_busy">Система не дала начать запись — микрофон занят другим приложением</string>
+    <string name="session_error_mic_read">Ошибка чтения микрофона: %1$d</string>
+
+    <string name="key_name_volume_up">Громкость +</string>
+    <string name="key_name_volume_down">Громкость −</string>
+    <string name="key_name_space">Пробел</string>
+    <string name="key_name_dpad_center">Центр</string>
+    <string name="key_name_next_track">Следующий трек</string>
+    <string name="key_name_previous_track">Предыдущий трек</string>
+    <string name="key_name_headset">Кнопка гарнитуры</string>
+</resources>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Floating window, Quick Settings tile, session notification, microphone errors, key names. -->
+<resources>
+    <!-- Floating window buttons (read by TalkBack). The A−/A+ buttons show their label as text. -->
+    <string name="overlay_cd_font_smaller">Smaller text</string>
+    <string name="overlay_cd_font_larger">Larger text</string>
+    <string name="overlay_cd_lock">Lock: taps go through to the camera</string>
+    <string name="overlay_cd_close">Close</string>
+    <string name="overlay_cd_unlock">Unlock window</string>
+
+    <!-- Status next to the level meter. It shares a row with eight buttons: keep it to about 10 characters. -->
+    <string name="overlay_status_starting">starting…</string>
+    <string name="overlay_status_stopped">stopped</string>
+    <string name="overlay_status_paused">paused</string>
+    <string name="overlay_status_auto">auto</string>
+    <string name="overlay_status_mic_busy">mic busy</string>
+    <string name="overlay_status_cant_hear">can\'t hear</string>
+    <string name="overlay_status_listening">listening</string>
+
+    <string name="overlay_toast_closed_a11y_off">Suflyor window closed: the accessibility service was turned off</string>
+
+    <!-- Quick Settings tile. The subtitle shows the script title when not running. -->
+    <string name="tile_label">Suflyor</string>
+    <string name="tile_subtitle_listening">Listening</string>
+
+    <!-- Notification while the window is over other apps -->
+    <string name="notification_channel_session">Suflyor running</string>
+    <string name="notification_session_title">Suflyor is listening</string>
+    <string name="notification_session_text">The floating window is on</string>
+    <string name="notification_action_stop">Stop</string>
+
+    <!-- Why listening failed; shown in the window's diagnostics line -->
+    <string name="session_error_asr_failed">Speech recognition didn\'t load: %1$s</string>
+    <string name="session_error_rate_unsupported">The microphone doesn\'t support %1$d Hz</string>
+    <string name="session_error_recorder_create">Couldn\'t create AudioRecord: %1$s</string>
+    <string name="session_error_recorder_init">AudioRecord didn\'t initialize (no microphone permission?)</string>
+    <string name="session_error_record_start">Couldn\'t start recording: %1$s</string>
+    <string name="session_error_mic_busy">Android wouldn\'t start recording — another app is using the microphone</string>
+    <string name="session_error_mic_read">Microphone read error: %1$d</string>
+
+    <!-- Hardware keys in Settings → Remote and buttons. Enter, Page Up/Down, arrows and Play/Pause are not translated. -->
+    <string name="key_name_volume_up">Volume +</string>
+    <string name="key_name_volume_down">Volume −</string>
+    <string name="key_name_space">Space</string>
+    <string name="key_name_dpad_center">D-pad center</string>
+    <string name="key_name_next_track">Next track</string>
+    <string name="key_name_previous_track">Previous track</string>
+    <string name="key_name_headset">Headset button</string>
+</resources>
