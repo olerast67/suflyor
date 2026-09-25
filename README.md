@@ -171,7 +171,9 @@ Ideas and votes are welcome in [Issues](https://github.com/olerast67/suflyor/iss
 
 Suflyor is free and always will be: no ads, no paywalls, no "pro" version. If it saves you retakes, you can support its development. Every donation goes into more languages and more devices to test on.
 
-**[❤️ Ways to donate →](DONATE.md)**
+<a href="https://boosty.to/olerast/donate"><img alt="Donate on Boosty" src="https://img.shields.io/badge/Donate-Boosty-F15F2C?style=for-the-badge" height="36"></a>
+&nbsp;
+<a href="DONATE.md"><img alt="USDT TRC20 and more" src="https://img.shields.io/badge/USDT%20TRC20%20%C2%B7%20more-DONATE.md-26A17B?style=for-the-badge" height="36"></a>
 
 Starring the repository and telling other creators about it helps too.
 

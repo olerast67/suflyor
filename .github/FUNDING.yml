@@ -1,9 +1,6 @@
-# Adds the "Sponsor" button to the repository. Keep only the channels you actually opened (see DONATE.md).
-# github: USERNAME            # GitHub Sponsors (needs a bank account in a supported country)
+# Adds the "Sponsor" button to the repository (see DONATE.md). Uncomment channels as they open.
+# github: olerast67           # GitHub Sponsors
 # patreon: USERNAME
-# ko_fi: USERNAME
-# liberapay: USERNAME
 custom:
+  - "https://boosty.to/olerast/donate"
   - "https://github.com/olerast67/suflyor/blob/main/DONATE.md"
-  # - "https://boosty.to/USERNAME"
-  # - "https://pay.cloudtips.ru/p/XXXXXXXX"

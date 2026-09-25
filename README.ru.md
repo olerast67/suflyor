@@ -151,7 +151,9 @@ cd suflyor
 
 Суфлёр бесплатный и таким останется: без рекламы, платных функций и «про»-версии. Если он экономит тебе дубли, можно поддержать разработку. Донаты идут на новые языки и на телефоны для тестов.
 
-**[❤️ Как поддержать →](DONATE.md)**
+<a href="https://boosty.to/olerast/donate"><img alt="Донат на Boosty" src="https://img.shields.io/badge/Донат-Boosty-F15F2C?style=for-the-badge" height="36"></a>
+&nbsp;
+<a href="DONATE.md"><img alt="USDT TRC20 и другие способы" src="https://img.shields.io/badge/USDT%20TRC20%20%C2%B7%20другие%20способы-DONATE.md-26A17B?style=for-the-badge" height="36"></a>
 
 Звёздочка репозиторию и рассказ о нём другим авторам тоже очень помогают.
 
